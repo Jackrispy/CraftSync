@@ -179,7 +179,7 @@ CraftSync has automatic retry logic for connection drops. If it fails completely
 
 CraftSync is free to use. If you find it useful and want to support development:
 
-☕ [Buy me a coffee on Ko-fi](https://ko-fi.com/YOURNAME) — (INSERT YOUR KO-FI LINK)
+☕ **[Donation Link](buymeacoffee.com/bwn2msm6em)**
 
 For bug reports and feature requests, open an [Issue](../../issues) on GitHub.
 
