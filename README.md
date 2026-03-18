@@ -102,6 +102,8 @@ If the host updates their mods, they can use **⟳ Sync Mods** to re-upload the 
 ### Mod mismatch warning
 If your local mods don't match the world's recorded modlist, CraftSync will warn you before launching. Use Sync Mods to fix this automatically.
 
+![CraftSync home screen](docs/images/SYNC.png)
+
 ---
 
 ## Voxy & Distant Horizons Cache
