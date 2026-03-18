@@ -189,4 +189,6 @@ For bug reports and feature requests, open an [Issue](../../issues) on GitHub.
 
 CraftSync is source-available. You may view and contribute to the code but may not redistribute it or use it commercially without permission.
 
+The coding for this project was AI assisted.
+
 © 2026 CraftSync
