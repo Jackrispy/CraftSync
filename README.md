@@ -30,6 +30,8 @@ The app integrates directly with the **Modrinth launcher** — it reads your ins
 - **World locking** — the world locks while someone is playing so two people can't edit at the same time
 - **Multi-world support** — manage multiple worlds, each with their own modpack and settings
 
+  *I CANNOT ACCESS YOUR MICROSOFT ACCOUNT THROUGH THIS APP IT IS COMPLETELY CLIENT SIDE*
+
 ![CraftSync home screen](docs/images/HOASTING.png)
 ---
 
