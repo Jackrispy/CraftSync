@@ -12,7 +12,7 @@ CraftSync is a Windows desktop app that lets you and your friends share a Minecr
 
 CraftSync uses your personal Microsoft OneDrive to store the world save. When you finish a session, the app automatically uploads only the files that changed. When a friend wants to play, they download just those changes. The first upload and download take longer since the full world needs to be transferred — every session after that is fast.
 
-[IMAGE: diagram showing upload/download flow between two players via OneDrive]
+*IMPORTANT* DO NOT PLAY YOUR WORLD OFFLINE WITHOUT GOING THROUGH THE APP LAUNCHER FIRST OR YOU COULD BOTH BE PLAYING AT THE SAME TIME AND WOULD CREATE A CORRUPT SAVE NEXT TIME YOU UPLOAD IT
 
 The app integrates directly with the **Modrinth launcher** — it reads your installed profiles, launches Minecraft with the correct version, and handles authentication automatically.
 
@@ -61,7 +61,7 @@ The app integrates directly with the **Modrinth launcher** — it reads your ins
 
 1. Click **+ Add World**
 2. Select the world save folder from your Modrinth profile's `saves/` directory
-3. Select the `.mrpack` file for the modpack your world uses
+3. Select the `.mrpack` file for the modpack your world uses (you will have to export this inside of Modrinth)
 4. Give the world a name and click **Upload**
 5. CraftSync will upload the full world zip and modpack — this is the one-time first upload and may take a while depending on world size and your upload speed
    
@@ -73,6 +73,11 @@ The app integrates directly with the **Modrinth launcher** — it reads your ins
 2. The first time on a new PC, CraftSync downloads the full world zip. After that it only downloads what changed
 3. Minecraft launches automatically with the correct version and mods
 4. When you close Minecraft, CraftSync automatically uploads your changes
+
+### Joining an already hosted world
+1. A **Join** button will appear if someone is already playing the world.
+2. Press the **Join** button and the correct profile will launch.
+3. Join the world through [Essential](https://modrinth.com/mod/essential)
 
 ![CraftSync home screen](docs/images/PLAY.png)
 
@@ -97,12 +102,12 @@ The app integrates directly with the **Modrinth launcher** — it reads your ins
 When you add a world you'll be asked to select a `.mrpack` file. This is the Modrinth modpack file for the profile you're playing on. Friends will be prompted to download and install it in Modrinth before they can play.
 
 ### Syncing mods
-If the host updates their mods, they can use **⟳ Sync Mods** to re-upload the mods, resource packs, and shader packs. Friends can then click **⟳ Sync Mods** on their end to download and replace their local folders automatically.
-
-### Mod mismatch warning
-If your local mods don't match the world's recorded modlist, CraftSync will warn you before launching. Use Sync Mods to fix this automatically.
+If the world owner updates their mods, they can use **↑ Update** to attach a new Modrinth modpack with new mods, resource packs, and shader packs. Friends can then click **⟳ Sync Mods** on their end to download and replace their local folders automatically (Means that you won't have to set up a new profile when the host sends the .mrpack).
 
 ![CraftSync home screen](docs/images/SYNC.png)
+
+### Mod mismatch warning
+If your local mods don't match the world's recorded modlist, CraftSync will warn you before launching. Use Sync Mods to fix this automatically. (This may revert any updates to mods that Modrinth did. Just ask the world owner to update their mods and attach a new .mrpack)
 
 ---
 
