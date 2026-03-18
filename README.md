@@ -1,11 +1,8 @@
 # CraftSync
-Shared Minecraft world sync for friends
-
-# CraftSync
 
 > Sync Minecraft worlds with friends — no server required.
 
-[IMAGE: CraftSync app screenshot — main world list screen]
+![CraftSync home screen](docs/images/HOME.png)
 
 CraftSync is a Windows desktop app that lets you and your friends share a Minecraft world over OneDrive. One person hosts the world, uploads it after each session, and everyone else downloads the latest version before they play. No dedicated server, no port forwarding, no complicated setup — just OneDrive and Modrinth.
 
@@ -33,8 +30,7 @@ The app integrates directly with the **Modrinth launcher** — it reads your ins
 - **World locking** — the world locks while someone is playing so two people can't edit at the same time
 - **Multi-world support** — manage multiple worlds, each with their own modpack and settings
 
-[IMAGE: world card showing locked/unlocked states and player info]
-
+![CraftSync home screen](docs/images/HOASTING.png)
 ---
 
 ## Requirements
@@ -53,7 +49,7 @@ The app integrates directly with the **Modrinth launcher** — it reads your ins
 3. Sign in with your Microsoft account when prompted
 4. CraftSync will create a `CraftSync` folder on your OneDrive automatically
 
-[IMAGE: Microsoft sign-in screen inside CraftSync]
+![CraftSync home screen](docs/images/LOGIN.png)
 
 ---
 
@@ -66,8 +62,8 @@ The app integrates directly with the **Modrinth launcher** — it reads your ins
 3. Select the `.mrpack` file for the modpack your world uses
 4. Give the world a name and click **Upload**
 5. CraftSync will upload the full world zip and modpack — this is the one-time first upload and may take a while depending on world size and your upload speed
-
-[IMAGE: Add World modal]
+   
+![CraftSync home screen](docs/images/ADDWORLD.png)
 
 ### Playing a world
 
@@ -76,7 +72,7 @@ The app integrates directly with the **Modrinth launcher** — it reads your ins
 3. Minecraft launches automatically with the correct version and mods
 4. When you close Minecraft, CraftSync automatically uploads your changes
 
-[IMAGE: Play modal with modpack download section]
+![CraftSync home screen](docs/images/PLAY.png)
 
 ### Adding friends
 
@@ -89,7 +85,7 @@ The app integrates directly with the **Modrinth launcher** — it reads your ins
 2. Paste the invite code you received
 3. Your friend's worlds will appear in a separate section on the main screen
 
-[IMAGE: Friends panel with invite code]
+![CraftSync home screen](docs/images/FRIENDS.png)
 
 ---
 
@@ -100,8 +96,6 @@ When you add a world you'll be asked to select a `.mrpack` file. This is the Mod
 
 ### Syncing mods
 If the host updates their mods, they can use **⟳ Sync Mods** to re-upload the mods, resource packs, and shader packs. Friends can then click **⟳ Sync Mods** on their end to download and replace their local folders automatically.
-
-[IMAGE: world card showing sync mods and upload cache buttons]
 
 ### Mod mismatch warning
 If your local mods don't match the world's recorded modlist, CraftSync will warn you before launching. Use Sync Mods to fix this automatically.
@@ -121,7 +115,7 @@ If you use **Voxy** or **Distant Horizons** for chunk pre-rendering, CraftSync c
 - Click **⬇ Guest** if you will be joining via Essential multiplayer
 - For guest cache: you must have joined a hosted session at least once first so Voxy creates the correct folder structure
 
-[IMAGE: cache strip showing upload and host/guest download buttons]
+![CraftSync home screen](docs/images/CACHE.png)
 
 ---
 
