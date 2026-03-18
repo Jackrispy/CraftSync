@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data:;">
+<title>CraftSync</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0c0f; --surface:#111418; --surface2:#181c22; --border:#1e2530;
+    --green:#4ade80; --green-dim:#166534;
+    --yellow:#fbbf24; --yellow-dim:#78350f;
+    --red:#f87171; --red-dim:#7f1d1d;
+    --blue:#60a5fa; --blue-dim:#1e3a8a;
+    --orange:#fb923c; --orange-dim:#7c2d12;
+    --purple:#a78bfa; --purple-dim:#4c1d95;
+    --text:#e2e8f0; --text-dim:#64748b; --text-mid:#94a3b8;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{font-size:14px;}
+  body{font-family:'Space Mono',monospace;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;user-select:none;font-size:13px;}
+
+  /* Grid bg */
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(74,222,128,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(74,222,128,0.03) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0;}
+  body::after{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(74,222,128,0.07) 0%,transparent 70%);pointer-events:none;z-index:0;}
+
+  /* Titlebar */
+  .titlebar{height:44px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 18px;-webkit-app-region:drag;flex-shrink:0;position:relative;z-index:10;}
+  .titlebar-logo{font-family:'Unbounded',sans-serif;font-size:15px;font-weight:800;letter-spacing:-0.3px;}
+  .titlebar-logo span{color:var(--green);}
+  .titlebar-controls{display:flex;gap:6px;-webkit-app-region:no-drag;}
+  .titlebar-btn{width:32px;height:32px;border-radius:6px;border:none;background:transparent;color:var(--text-dim);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+  .titlebar-btn:hover{background:var(--surface2);color:var(--text);}
+  .titlebar-btn.close:hover{background:var(--red-dim);color:var(--red);}
+
+  /* Main layout */
+  .main{flex:1;overflow-y:auto;position:relative;z-index:1;}
+  .main::-webkit-scrollbar{width:6px;}
+  .main::-webkit-scrollbar-track{background:transparent;}
+  .main::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+  .container{max-width:960px;margin:0 auto;padding:36px 28px 60px;}
+
+  /* Sign in */
+  .signin-screen{text-align:center;padding:80px 24px;animation:fadeUp 0.4s ease;}
+  .signin-screen h1{font-family:'Unbounded',sans-serif;font-size:36px;font-weight:800;margin-bottom:10px;line-height:1.1;}
+  .signin-screen h1 span{color:var(--green);}
+  .signin-screen p{color:var(--text-dim);font-size:14px;margin-bottom:36px;line-height:1.8;}
+  .btn-microsoft{font-family:'Space Mono',monospace;display:inline-flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px 28px;border-radius:10px;font-size:14px;cursor:pointer;transition:all 0.2s;font-weight:700;}
+  .btn-microsoft:hover{border-color:var(--blue);color:var(--blue);box-shadow:0 0 20px rgba(96,165,250,0.15);transform:translateY(-1px);}
+
+  /* Header */
+  .app-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px;}
+  .header-user{display:flex;align-items:center;gap:12px;}
+  .avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#166534,#4ade80);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#0a0c0f;border:2px solid var(--green-dim);flex-shrink:0;}
+  .user-info{display:flex;flex-direction:column;gap:2px;}
+  .user-name{font-size:13px;font-weight:700;}
+  .user-email{font-size:11px;color:var(--text-dim);}
+  .btn-signout{font-family:'Space Mono',monospace;font-size:11px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:6px 12px;border-radius:5px;cursor:pointer;transition:all 0.2s;}
+  .btn-signout:hover{border-color:var(--red);color:var(--red);}
+
+  /* Storage bar */
+  .storage-bar-wrap{display:flex;flex-direction:column;gap:4px;min-width:180px;}
+  .storage-bar-label{display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);font-family:'Space Mono',monospace;}
+  .storage-bar-label.warn{color:var(--yellow);}
+  .storage-bar-label.danger{color:var(--red);}
+  .storage-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;position:relative;}
+  .storage-bar-fill{height:100%;border-radius:3px;background:var(--border);position:relative;transition:width 0.4s ease;}
+  .storage-bar-fill.warn{background:var(--yellow);}
+  .storage-bar-fill.danger{background:var(--red);}
+  .storage-bar-cs{position:absolute;right:0;top:0;height:100%;background:var(--green);border-radius:3px;transition:width 0.4s ease;}
+  .storage-bar-legend{display:flex;gap:10px;font-size:9px;font-family:'Space Mono',monospace;}
+  .storage-legend-item{display:flex;align-items:center;gap:4px;color:var(--text-dim);}
+  .storage-legend-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+  .storage-free-badge{font-size:9px;font-family:'Space Mono',monospace;color:var(--yellow);background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:4px;padding:2px 6px;white-space:nowrap;}
+
+  /* Section */
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .section-title{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;}
+  .btn-add{font-family:'Space Mono',monospace;font-size:12px;background:var(--green-dim);border:1px solid var(--green);color:var(--green);padding:7px 16px;border-radius:6px;cursor:pointer;transition:all 0.2s;}
+  .btn-add:hover{background:var(--green);color:#0a0c0f;box-shadow:0 0 14px rgba(74,222,128,0.3);}
+  .section-header-right{display:flex;align-items:center;gap:10px;}
+  .refresh-bar{display:flex;align-items:center;gap:8px;}
+  .last-refreshed{font-size:11px;color:var(--text-dim);font-family:'Space Mono',monospace;}
+  .btn-refresh{font-family:'Space Mono',monospace;font-size:12px;background:transparent;border:1px solid rgba(255,255,255,0.12);color:var(--text-dim);padding:6px 12px;border-radius:6px;cursor:pointer;transition:all 0.2s;line-height:1;}
+  .btn-refresh:hover{border-color:rgba(255,255,255,0.3);color:var(--text);}
+  .btn-refresh:disabled{opacity:0.35;cursor:not-allowed;}
+  .btn-refresh.spinning{animation:spin 0.7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* Banners */
+  .active-banner{background:linear-gradient(135deg,rgba(74,222,128,0.08),rgba(74,222,128,0.03));border:1px solid rgba(74,222,128,0.25);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;gap:16px;}
+  .active-banner-left{display:flex;align-items:center;gap:14px;}
+  .pulse-dot{width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,0.6);}50%{box-shadow:0 0 0 6px rgba(74,222,128,0);}}
+  .active-banner-text h4{font-family:'Unbounded',sans-serif;font-size:12px;font-weight:600;color:var(--green);margin-bottom:3px;}
+  .active-banner-text p{font-size:11px;color:var(--text-dim);}
+  .btn-stop{font-family:'Space Mono',monospace;font-size:12px;background:transparent;border:1px solid var(--red);color:var(--red);padding:8px 16px;border-radius:6px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+  .btn-stop:hover{background:var(--red);color:#fff;}
+
+  .progress-banner{border-radius:10px;padding:13px 18px;display:flex;align-items:center;gap:12px;margin-bottom:14px;animation:fadeUp 0.3s ease;}
+  .progress-banner.upload{background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.2);}
+  .progress-banner.download{background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.2);}
+  .progress-banner.modpack{background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.2);}
+  .spinner{width:17px;height:17px;border:2px solid var(--border);border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;}
+  .spinner.blue{border-top-color:var(--blue);}
+  .spinner.green{border-top-color:var(--green);}
+  .spinner.purple{border-top-color:var(--purple);}
+  .btn-cancel-op{font-family:'Space Mono',monospace;font-size:11px;background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--text-dim);padding:5px 10px;border-radius:5px;cursor:pointer;transition:all 0.2s;white-space:nowrap;flex-shrink:0;}
+  .btn-cancel-op:hover{border-color:var(--red);color:var(--red);}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .progress-text{font-size:12px;}
+  .progress-text.blue{color:var(--blue);}
+  .progress-text.green{color:var(--green);}
+  .progress-text.purple{color:var(--purple);}
+
+  /* World section grouping */
+  .worlds-list{display:flex;flex-direction:column;gap:0;margin-bottom:36px;}
+  .worlds-section{display:flex;flex-direction:column;gap:14px;margin-bottom:0;}
+  .worlds-section-label{display:flex;align-items:center;gap:8px;font-family:'Unbounded',sans-serif;font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:0;margin-top:20px;}
+  .worlds-section:first-child .worlds-section-label{margin-top:0;}
+  .world-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:all 0.25s;animation:fadeUp 0.3s ease both;}
+  .world-card:hover{border-color:rgba(74,222,128,0.2);box-shadow:0 6px 28px rgba(0,0,0,0.4);transform:translateY(-1px);}
+  .world-card.locked{border-color:rgba(251,191,36,0.15);}
+  .world-card.locked:hover{border-color:rgba(251,191,36,0.3);}
+
+  .world-card-main{padding:20px 24px;display:grid;grid-template-columns:58px 1fr auto;align-items:center;gap:20px;}
+  .world-icon{width:58px;height:58px;border-radius:10px;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:1.5px;padding:6px;flex-shrink:0;}
+  .world-icon.grass{background:#14532d;box-shadow:0 0 14px rgba(74,222,128,0.15);}
+  .world-icon.nether{background:#450a0a;box-shadow:0 0 14px rgba(248,113,113,0.15);}
+  .world-icon.sky{background:#0c1445;box-shadow:0 0 14px rgba(96,165,250,0.15);}
+
+  .world-info h3{font-family:'Unbounded',sans-serif;font-size:15px;font-weight:600;margin-bottom:6px;}
+  .world-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .meta-item{font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:4px;}
+  .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+  .dot-green{background:var(--green);box-shadow:0 0 5px var(--green);}
+  .dot-yellow{background:var(--yellow);box-shadow:0 0 5px var(--yellow);}
+  .dot-dim{background:var(--text-dim);}
+  .badge{font-size:10px;padding:3px 8px;border-radius:4px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}
+  .badge-green{background:var(--green-dim);color:var(--green);border:1px solid rgba(74,222,128,0.3);}
+  .badge-yellow{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(251,191,36,0.3);}
+
+  .world-actions{display:flex;flex-direction:column;gap:7px;align-items:flex-end;}
+  .btn-play{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;background:var(--green);color:#0a0c0f;border:none;padding:10px 22px;border-radius:8px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+  .btn-play:hover{box-shadow:0 0 20px rgba(74,222,128,0.45);transform:scale(1.03);}
+  .btn-play:disabled{background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);cursor:not-allowed;box-shadow:none;transform:none;}
+  .world-size{font-size:11px;color:var(--text-dim);text-align:right;}
+  .btn-delete{font-family:'Space Mono',monospace;font-size:11px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:6px 12px;border-radius:6px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+  .btn-delete:hover{border-color:var(--red);color:var(--red);}
+
+  /* Modpack strip */
+  .modpack-strip{border-top:1px solid var(--border);padding:11px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(167,139,250,0.03);}
+  .modpack-strip-left{display:flex;align-items:center;gap:10px;}
+  .modpack-icon{width:30px;height:30px;border-radius:6px;background:var(--purple-dim);border:1px solid rgba(167,139,250,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+  .modpack-info{display:flex;flex-direction:column;gap:2px;}
+  .modpack-name{font-size:12px;font-weight:700;color:var(--purple);}
+  .modpack-meta{font-size:11px;color:var(--text-dim);}
+  .no-modpack{font-size:11px;color:var(--text-dim);font-style:italic;}
+  .modpack-actions{display:flex;gap:6px;}
+  .btn-mp-dl{font-family:'Space Mono',monospace;font-size:11px;background:var(--purple-dim);border:1px solid rgba(167,139,250,0.35);color:var(--purple);padding:5px 12px;border-radius:5px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+  .btn-mp-dl:hover{background:var(--purple);color:#0a0c0f;}
+  .btn-mp-up{font-family:'Space Mono',monospace;font-size:11px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:5px 12px;border-radius:5px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+  .btn-mp-up:hover{border-color:var(--purple);color:var(--purple);}
+  .cache-strip{border-top:1px solid var(--border);padding:9px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(56,189,248,0.03);}
+  .cache-strip-left{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-dim);}
+  .modpack-update-strip{border-top:1px solid rgba(251,191,36,0.3);padding:9px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(251,191,36,0.05);}
+  .modpack-update-left{display:flex;align-items:center;gap:8px;font-size:11px;color:#fbbf24;}
+  .btn-mp-update{font-family:'Space Mono',monospace;font-size:11px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;padding:5px 12px;border-radius:5px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+  .btn-mp-update:hover{background:rgba(251,191,36,0.2);}
+  .btn-cache{font-family:'Space Mono',monospace;font-size:11px;background:transparent;border:1px solid rgba(56,189,248,0.3);color:rgba(56,189,248,0.8);padding:5px 12px;border-radius:5px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+  .btn-cache:hover{background:rgba(56,189,248,0.1);border-color:rgba(56,189,248,0.6);}
+  .btn-cache:disabled{opacity:0.35;cursor:not-allowed;}
+
+  /* Toast notifications */
+  #toastContainer{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none;}
+  .toast{background:#1a1d22;border:1px solid var(--border);border-radius:10px;padding:14px 18px;font-size:12px;max-width:360px;display:flex;align-items:flex-start;gap:10px;pointer-events:all;animation:slideIn 0.25s ease;box-shadow:0 4px 24px rgba(0,0,0,0.6);}
+  .toast.success{border-color:rgba(74,222,128,0.5);background:#0f1f14;}
+  .toast.error{border-color:rgba(248,113,113,0.5);background:#1f0f0f;}
+  .toast.warning{border-color:rgba(251,191,36,0.5);background:#1f1a0a;}
+  .toast.info{border-color:rgba(96,165,250,0.5);background:#0d1520;}
+  .toast-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+  .toast-body{flex:1;}
+  .toast-title{font-weight:600;margin-bottom:3px;color:var(--text);font-size:13px;}
+  .toast-msg{color:var(--text-dim);line-height:1.5;font-size:12px;}
+  .toast-close{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;padding:0;line-height:1;flex-shrink:0;}
+  @keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+  /* In-app confirm modal */
+  .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(4px);}
+  .confirm-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;max-width:460px;width:90%;}
+  .confirm-box h4{font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;margin-bottom:10px;}
+  .confirm-box p{font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:18px;white-space:pre-wrap;}
+  .confirm-actions{display:flex;gap:8px;justify-content:flex-end;}
+
+  /* Players */
+  .players-section{margin-bottom:36px;}
+  .players-list{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
+  .player-row{display:flex;align-items:center;gap:12px;padding:11px 16px;background:var(--surface);border:1px solid var(--border);border-radius:9px;}
+  .player-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0a0c0f;flex-shrink:0;position:relative;}
+  .player-avatar .status-dot{position:absolute;bottom:-1px;right:-1px;width:9px;height:9px;border-radius:50%;border:2px solid var(--bg);}
+  .status-dot.online{background:var(--green);}
+  .status-dot.offline{background:#555;}
+  .player-name{font-size:13px;flex:1;}
+  .player-status{font-size:11px;color:var(--text-dim);}
+  .world-online-members{display:flex;gap:4px;align-items:center;margin-top:4px;}
+  .member-pip{width:22px;height:22px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#0a0c0f;border:1px solid rgba(74,222,128,0.4);title:attr(data-name);}
+  .member-pip.offline{background:#333;color:var(--text-dim);border-color:rgba(255,255,255,0.1);}
+
+  /* Empty state */
+  .empty-state{text-align:center;padding:48px 24px;color:var(--text-dim);}
+  .empty-state p{font-size:13px;margin-top:8px;}
+
+  /* Modals */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s ease;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:30px;width:100%;max-width:480px;margin:24px;animation:scaleIn 0.2s ease;max-height:90vh;overflow-y:auto;}
+  .modal h3{font-family:'Unbounded',sans-serif;font-size:17px;font-weight:700;margin-bottom:9px;}
+  .modal-desc{font-size:12px;color:var(--text-dim);margin-bottom:22px;line-height:1.7;}
+  .modal-input-group{margin-bottom:16px;}
+  .modal-input-group label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;}
+  .modal-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 13px;border-radius:7px;font-family:'Space Mono',monospace;font-size:12px;outline:none;transition:border-color 0.2s;}
+  .modal-input:focus{border-color:var(--green);}
+  .folder-pick-row{display:flex;gap:8px;}
+  .folder-pick-row .modal-input{flex:1;cursor:default;}
+  .btn-browse{font-family:'Space Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:10px 14px;border-radius:7px;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+  .btn-browse:hover{border-color:var(--green);color:var(--green);}
+  .modal-divider{border:none;border-top:1px solid var(--border);margin:20px 0;}
+  .modal-section-label{font-family:'Unbounded',sans-serif;font-size:10px;color:var(--purple);letter-spacing:2px;text-transform:uppercase;margin-bottom:9px;}
+  .modal-section-sub{font-size:11px;color:var(--text-dim);margin-bottom:13px;line-height:1.6;}
+  .modal-file-area{border:1px dashed rgba(167,139,250,0.3);border-radius:9px;padding:18px;text-align:center;cursor:pointer;transition:all 0.2s;background:rgba(167,139,250,0.03);margin-bottom:6px;}
+  .modal-file-area:hover{border-color:var(--purple);background:rgba(167,139,250,0.07);}
+  .modal-file-area p{font-size:12px;color:var(--text-dim);}
+  .modal-file-area span{font-size:11px;color:var(--text-dim);opacity:0.6;}
+  .file-selected{font-size:11px;color:var(--purple);text-align:center;margin-top:4px;}
+
+  /* Play modal specifics */
+  .modal-modpack-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.25);border-radius:9px;padding:12px 16px;margin-bottom:9px;}
+  .modal-modpack-row.downloaded{background:rgba(74,222,128,0.06);border-color:rgba(74,222,128,0.25);}
+  .modal-modpack-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+  .modal-modpack-name{font-size:12px;font-weight:700;color:var(--purple);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .modal-modpack-row.downloaded .modal-modpack-name{color:var(--green);}
+  .modal-modpack-sub{font-size:11px;color:var(--text-dim);margin-top:2px;line-height:1.4;}
+  .btn-mp-inline{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;background:var(--purple-dim);border:1px solid rgba(167,139,250,0.4);color:var(--purple);padding:6px 14px;border-radius:5px;cursor:pointer;transition:all 0.2s;white-space:nowrap;flex-shrink:0;}
+  .btn-mp-inline:hover{background:var(--purple);color:#0a0c0f;}
+  .btn-mp-inline.done{background:var(--green-dim);border-color:rgba(74,222,128,0.4);color:var(--green);cursor:default;}
+  .btn-mp-inline.done:hover{background:var(--green-dim);color:var(--green);box-shadow:none;}
+
+  .modal-warning{display:flex;gap:10px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.25);border-radius:9px;padding:12px 16px;margin-bottom:13px;}
+  .modal-warning-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+  .modal-warning-text{font-size:12px;color:var(--text-mid);line-height:1.5;}
+  .modal-warning-text strong{color:var(--yellow);}
+  .modal-info{display:flex;gap:10px;background:rgba(96,165,250,0.07);border:1px solid rgba(96,165,250,0.2);border-radius:9px;padding:12px 16px;margin-bottom:13px;}
+  .modal-info-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+  .modal-info-text{font-size:12px;color:var(--text-mid);line-height:1.5;}
+  .modal-info-text strong{color:var(--blue);}
+
+  .confirm-check-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;cursor:pointer;}
+  .confirm-check-row input[type=checkbox]{margin-top:2px;accent-color:var(--green);width:15px;height:15px;flex-shrink:0;cursor:pointer;}
+  .confirm-check-row label{font-size:12px;color:var(--text-mid);line-height:1.5;cursor:pointer;}
+
+  .modal-actions{display:flex;gap:8px;}
+  .btn-cancel{font-family:'Space Mono',monospace;flex:1;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:10px;border-radius:7px;cursor:pointer;font-size:12px;transition:all 0.2s;}
+  .btn-cancel:hover{border-color:var(--text-mid);color:var(--text);}
+  .btn-confirm{font-family:'Space Mono',monospace;flex:2;background:var(--green);border:none;color:#0a0c0f;padding:10px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;transition:all 0.2s;}
+  .btn-confirm:hover{box-shadow:0 0 18px rgba(74,222,128,0.4);}
+  .btn-confirm:disabled{background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);cursor:not-allowed;box-shadow:none;}
+  .btn-confirm.purple{background:var(--purple);}
+  .btn-confirm.purple:hover{box-shadow:0 0 18px rgba(167,139,250,0.4);}
+  .btn-confirm.orange{background:var(--orange);}
+  .btn-confirm.orange:hover{box-shadow:0 0 18px rgba(251,146,60,0.4);}
+
+  .error-msg{font-size:12px;color:var(--red);margin-top:8px;text-align:center;}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  @keyframes scaleIn{from{opacity:0;transform:scale(0.96);}to{opacity:1;transform:scale(1);}}
+  .hidden{display:none !important;}
+  input[type="file"]{display:none;}
+</style>
+</head>
+<body>
+
+<!-- Titlebar -->
+<div class="titlebar">
+  <div class="titlebar-logo">Craft<span>Sync</span></div>
+  <div class="titlebar-controls">
+    <button class="titlebar-btn" onclick="window.craftsync.minimize()">─</button>
+    <button class="titlebar-btn" onclick="window.craftsync.maximize()">□</button>
+    <button class="titlebar-btn close" onclick="window.craftsync.close()">✕</button>
+  </div>
+</div>
+
+<div class="main">
+<div class="container">
+
+  <!-- Sign in -->
+  <div id="signinScreen" class="signin-screen">
+    <h1>Shared worlds,<br><span>zero hassle.</span></h1>
+    <p>Sign in with Microsoft to sync your Minecraft worlds<br>and modpacks with friends via OneDrive.</p>
+    <button class="btn-microsoft" onclick="login()">
+      <svg width="18" height="18" viewBox="0 0 21 21" fill="none">
+        <rect x="1" y="1" width="9" height="9" fill="#F25022"/><rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
+        <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/><rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
+      </svg>
+      Sign in with Microsoft
+    </button>
+    <div class="error-msg hidden" id="loginError"></div>
+  </div>
+
+  <!-- Main app -->
+  <div id="mainApp" class="hidden">
+
+    <!-- Header -->
+    <div class="app-header">
+      <div class="header-user">
+        <div class="avatar" id="userAvatar">?</div>
+        <div class="user-info">
+          <span class="user-name" id="userName">—</span>
+          <span class="user-email" id="userEmail">—</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div id="storageBarWrap" class="storage-bar-wrap hidden">
+          <div class="storage-bar-label" id="storageBarLabel">
+            <span id="storageUsedLabel">— GB used</span>
+            <span id="storageTotalLabel">— GB</span>
+          </div>
+          <div class="storage-bar">
+            <div class="storage-bar-fill" id="storageBarFill" style="width:0%">
+              <div class="storage-bar-cs" id="storageBarCS" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="storage-bar-legend">
+            <div class="storage-legend-item">
+              <div class="storage-legend-dot" style="background:var(--blue)"></div>
+              <span id="storageOtherLabel">Other</span>
+            </div>
+            <div class="storage-legend-item">
+              <div class="storage-legend-dot" style="background:var(--green)"></div>
+              <span id="storageCsLabel">CraftSync</span>
+            </div>
+          </div>
+        </div>
+        <span class="storage-free-badge hidden" id="freeBadge">FREE · 5GB</span>
+        <button class="btn-signout" onclick="logout()">Sign out</button>
+      </div>
+    </div>
+
+    <!-- Active session banner -->
+    <div class="active-banner hidden" id="activeBanner">
+      <div class="active-banner-left">
+        <div class="pulse-dot"></div>
+        <div class="active-banner-text">
+          <h4 id="activeName">Playing: —</h4>
+          <p id="activeTimer">Session started</p>
+        </div>
+      </div>
+      <button class="btn-stop" onclick="stopSession()">⏹ Stop & Upload</button>
+    </div>
+
+    <!-- Progress banners -->
+    <div class="progress-banner upload hidden" id="uploadBanner">
+      <div class="spinner blue"></div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span class="progress-text blue" id="uploadText">Uploading...</span>
+          <span class="progress-text blue" id="uploadPct" style="opacity:0.7"></span>
+        </div>
+        <div style="height:3px;background:rgba(96,165,250,0.15);border-radius:2px;overflow:hidden">
+          <div id="uploadProgressBar" style="height:100%;background:var(--blue);border-radius:2px;width:0%;transition:width 0.3s ease"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px" id="uploadDetail"></div>
+      </div>
+      <button onclick="cancelOperation()" class="btn-cancel-op">✕ Cancel</button>
+    </div>
+    <div class="progress-banner download hidden" id="downloadBanner">
+      <div class="spinner green"></div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span class="progress-text green" id="downloadText">Downloading...</span>
+          <span class="progress-text green" id="downloadPct" style="opacity:0.7"></span>
+        </div>
+        <div style="height:3px;background:rgba(74,222,128,0.15);border-radius:2px;overflow:hidden">
+          <div id="downloadProgressBar" style="height:100%;background:var(--green);border-radius:2px;width:0%;transition:width 0.3s ease"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px" id="downloadDetail"></div>
+      </div>
+      <button onclick="cancelOperation()" class="btn-cancel-op">✕ Cancel</button>
+    </div>
+    <div class="progress-banner modpack hidden" id="modpackBanner">
+      <div class="spinner purple"></div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span class="progress-text purple" id="modpackText">Processing modpack...</span>
+          <span class="progress-text purple" id="modpackPct" style="opacity:0.7"></span>
+        </div>
+        <div style="height:3px;background:rgba(167,139,250,0.15);border-radius:2px;overflow:hidden">
+          <div id="modpackProgressBar" style="height:100%;background:var(--purple);border-radius:2px;width:0%;transition:width 0.3s ease"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px" id="modpackDetail"></div>
+      </div>
+      <button onclick="cancelOperation()" class="btn-cancel-op">✕ Cancel</button>
+    </div>
+
+    <!-- Worlds -->
+    <div class="section-header">
+      <span class="section-title">Shared Worlds</span>
+      <div class="section-header-right">
+        <div class="refresh-bar">
+          <span class="last-refreshed" id="lastRefreshed">—</span>
+          <button class="btn-refresh" id="refreshBtn" onclick="manualRefresh()" title="Refresh">↻</button>
+        </div>
+        <button class="btn-add" onclick="showAddModal()">+ Add World</button>
+      </div>
+    </div>
+    <div class="worlds-list" id="worldsList">
+      <div class="empty-state">
+        <div style="font-size:32px">🌍</div>
+        <p>No shared worlds yet — add one to get started!</p>
+      </div>
+    </div>
+
+    <!-- Who's Playing -->
+    <div class="players-section">
+      <div class="section-header">
+        <span class="section-title">Who's Playing</span>
+      </div>
+      <div class="players-list" id="playersList"></div>
+    </div>
+
+    <!-- Friends (owner only) -->
+    <div class="players-section hidden" id="friendsSection">
+      <div class="section-header">
+        <span class="section-title">Friends</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn-add" onclick="showInviteModal()">+ Add Friend</button>
+        </div>
+      </div>
+      <div class="players-list" id="friendsList"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- ADD FRIEND MODAL -->
+<!-- TOAST CONTAINER -->
+<div id="toastContainer"></div>
+
+<!-- INVITE MODAL -->
+<div class="modal-overlay hidden" id="inviteModal">
+  <div class="modal">
+    <h3>Add a Friend</h3>
+    <p class="modal-desc">Share your invite code with a friend, then paste theirs. Both sides need to add each other.</p>
+
+    <div class="modal-section-label">Your Invite Code</div>
+    <p class="modal-section-sub">Send this to your friend — it gives them access to your worlds.</p>
+    <div class="folder-pick-row" style="margin-bottom:6px">
+      <input class="modal-input" id="myInviteCode" placeholder="Click Generate..." readonly style="font-size:11px;letter-spacing:1px" />
+      <button class="btn-browse" id="generateCodeBtn" onclick="generateInviteCode()">Generate</button>
+      <button class="btn-browse" id="copyCodeBtn" onclick="copyInviteCode()" style="display:none">Copy</button>
+    </div>
+    <div class="error-msg hidden" id="generateError" style="margin-bottom:10px"></div>
+
+    <hr class="modal-divider">
+
+    <div class="modal-section-label">Paste Their Code</div>
+    <p class="modal-section-sub">Enter the code your friend sent you.</p>
+    <div class="folder-pick-row">
+      <input class="modal-input" id="friendInviteCode" placeholder="CS-XXXX-XXXX..." style="font-size:11px;letter-spacing:1px" />
+      <button class="btn-browse" onclick="redeemInviteCode()">Add</button>
+    </div>
+    <div class="error-msg hidden" id="redeemError"></div>
+
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-cancel" onclick="closeInviteModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- IN-APP CONFIRM MODAL -->
+<div class="confirm-overlay hidden" id="confirmModal">
+  <div class="confirm-box">
+    <h4 id="confirmTitle">Confirm</h4>
+    <p id="confirmMessage"></p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" id="confirmCancelBtn">Cancel</button>
+      <button class="btn-confirm" id="confirmOkBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD WORLD MODAL -->
+<div class="modal-overlay hidden" id="addModal">
+  <div class="modal">
+    <h3>Add Shared World</h3>
+    <p class="modal-desc">Select your world's save folder from Modrinth. It'll be uploaded to the shared OneDrive folder so your friends can access it.</p>
+    <div class="modal-input-group">
+      <label>World Name</label>
+      <input class="modal-input" id="newWorldName" placeholder="e.g. SurvivalWorld" />
+    </div>
+    <div class="modal-input-group">
+      <label>World Save Folder</label>
+      <div class="folder-pick-row">
+        <input class="modal-input" id="newWorldPath" placeholder="Paste path or click Browse..." oninput="state.addWorldPath = this.value.trim()" />
+        <button class="btn-browse" onclick="browseWorldFolder()">Browse</button>
+      </div>
+      <div id="worldSizeHint" style="margin-top:6px;font-size:11px;color:var(--text-dim);font-family:'Space Mono',monospace;min-height:16px"></div>
+    </div>
+    <hr class="modal-divider">
+    <div class="modal-section-label">Modpack <span style="color:var(--red)">*</span></div>
+    <p class="modal-section-sub">Attach the <strong>.mrpack</strong> export from Modrinth for this profile. Required so friends can install the correct mods.</p>
+    <div class="folder-pick-row" style="margin-top:6px">
+      <input class="modal-input" id="addMrpackLabel" placeholder="No file selected..." readonly style="cursor:pointer" onclick="browseAddMrpack()" />
+      <button class="btn-browse" onclick="browseAddMrpack()">Browse</button>
+    </div>
+    <div class="error-msg hidden" id="addError"></div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-confirm" id="addConfirmBtn" onclick="confirmAdd()">Upload & Share</button>
+    </div>
+  </div>
+</div>
+
+<!-- PLAY MODAL -->
+<div class="modal-overlay hidden" id="playModal">
+  <div class="modal">
+    <h3 id="playModalTitle">Play?</h3>
+    <p class="modal-desc" id="playModalDesc"></p>
+
+    <div class="hidden" id="modpackPlaySection">
+      <div class="modal-warning hidden" id="modpackUpdateWarning" style="margin-bottom:10px">
+        <div class="modal-warning-icon">🆕</div>
+        <div class="modal-warning-text"><strong>Modpack updated!</strong> <span id="modpackUpdateText">The host has updated the modpack since you last downloaded it.</span> Download the new version before playing.</div>
+      </div>
+      <div class="modal-modpack-row" id="modpackPlayRow">
+        <div class="modal-modpack-left">
+          <span style="font-size:16px">📦</span>
+          <div>
+            <div class="modal-modpack-name" id="modpackPlayName">—</div>
+            <div class="modal-modpack-sub">Download and install in Modrinth before playing</div>
+          </div>
+        </div>
+        <button class="btn-mp-inline" id="modpackDlBtn" onclick="downloadModpackInline()">⬇ Download</button>
+      </div>
+      <div class="modal-warning hidden" id="skipModpackWarning">
+        <div class="modal-warning-icon">⚠️</div>
+        <div class="modal-warning-text"><strong>Modpack not downloaded.</strong> If your mods don't match, the world may crash or behave unexpectedly. Only skip if you've already got this modpack installed.</div>
+      </div>
+    </div>
+
+    <div class="modal-info hidden" id="noModpackInfo">
+      <div class="modal-info-icon">ℹ️</div>
+      <div class="modal-info-text"><strong>No modpack attached.</strong> Make sure you and your friends are already on the same mods and Minecraft version.</div>
+    </div>
+
+    <div class="confirm-check-row">
+      <input type="checkbox" id="modsConfirmed" onchange="onModsCheckChange()">
+      <label for="modsConfirmed" id="modsConfirmedLabel">I confirm my mods are set up correctly</label>
+    </div>
+
+    <div class="error-msg hidden" id="playError"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closePlayModal()">Cancel</button>
+      <button class="btn-confirm orange" id="playConfirmBtn" onclick="confirmPlay()" disabled>▶ Download & Play</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE WORLD MODAL -->
+<div class="modal-overlay hidden" id="deleteModal">
+  <div class="modal">
+    <h3>Delete World?</h3>
+    <p class="modal-desc" id="deleteModalDesc"></p>
+    <div class="modal-warning">
+      <div class="modal-warning-icon">⚠️</div>
+      <div class="modal-warning-text"><strong>This cannot be undone.</strong> The world save and modpack will be permanently deleted from OneDrive for everyone.</div>
+    </div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn-confirm" style="background:var(--red);flex:1" onclick="confirmDelete()">🗑 Delete Forever</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOD MISMATCH MODAL -->
+<div class="modal-overlay hidden" id="modMismatchModal">
+  <div class="modal">
+    <h3>⚠️ Mod Mismatch</h3>
+    <p class="modal-desc">Your mods don't match the world's modlist. Fix them in Modrinth before playing.</p>
+    <div id="modMismatchMissing" class="hidden" style="margin-bottom:14px">
+      <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">❌ Missing mods</div>
+      <div id="modMismatchMissingList" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;max-height:140px;overflow-y:auto;font-size:11px;color:var(--red);line-height:1.8"></div>
+    </div>
+    <div id="modMismatchExtra" class="hidden" style="margin-bottom:14px">
+      <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">➕ Extra mods not in modlist</div>
+      <div id="modMismatchExtraList" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;max-height:140px;overflow-y:auto;font-size:11px;color:var(--yellow);line-height:1.8"></div>
+    </div>
+    <div class="modal-info">
+      <div class="modal-info-icon">ℹ️</div>
+      <div class="modal-info-text">Use <strong>⟳ Sync Mods</strong> to automatically fix your mods, or update them manually in Modrinth.</div>
+    </div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-confirm" onclick="closeModMismatchModal()">Got it</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOIN MODAL -->
+<div class="modal-overlay hidden" id="joinModal">
+  <div class="modal">
+    <h3 id="joinModalTitle">Join World?</h3>
+    <p class="modal-desc" id="joinModalDesc"></p>
+
+    <!-- Modpack check section -->
+    <div class="hidden" id="joinModpackSection">
+      <div class="modal-modpack-row" id="joinModpackRow">
+        <div class="modal-modpack-left">
+          <div class="modpack-icon">📦</div>
+          <div>
+            <div style="font-size:12px;font-weight:600" id="joinModpackName"></div>
+            <div style="font-size:10px;color:var(--text-dim)">Make sure this is installed in Modrinth before joining</div>
+          </div>
+        </div>
+        <button class="btn-mp-inline" id="joinModpackDlBtn" onclick="downloadModpackForJoin()">⬇ Download</button>
+      </div>
+    </div>
+
+    <div class="info-box hidden" id="joinNoModpackInfo">
+      <span class="info-icon">ℹ</span>
+      <span><strong>No modpack attached.</strong> Make sure you have the same mods and Minecraft version as the host.</span>
+    </div>
+
+    <label class="checkbox-row" style="margin-top:16px">
+      <input type="checkbox" id="joinModsConfirmed" onchange="onJoinCheckChange()">
+      <span id="joinModsConfirmedLabel">I confirm I have the correct mods installed</span>
+    </label>
+
+    <div class="error-msg hidden" id="joinError"></div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-cancel" onclick="closeJoinModal()">Cancel</button>
+      <button class="btn-confirm" id="joinConfirmBtn" disabled onclick="confirmJoin()">⚡ Launch & Join</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODPACK UPLOAD MODAL -->
+<div class="modal-overlay hidden" id="modpackModal">
+  <div class="modal">
+    <h3 id="modpackModalTitle">Upload Modpack</h3>
+    <p class="modal-desc" id="modpackModalDesc"></p>
+    <div class="folder-pick-row" style="margin-top:6px">
+      <input class="modal-input" id="modpackFileLabel" placeholder="No file selected..." readonly style="cursor:pointer" onclick="browseUploadMrpack()" />
+      <button class="btn-browse" onclick="browseUploadMrpack()">Browse</button>
+    </div>
+    <div class="error-msg hidden" id="modpackError"></div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-cancel" onclick="closeModpackModal()">Cancel</button>
+      <button class="btn-confirm purple" onclick="confirmUploadModpack()">Upload Modpack</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let state = {
+  user: null,
+  worlds: [],              // your own worlds
+  friendWorlds: {},        // { friendName: [worlds] }
+  members: {},
+  config: null,
+  friends: [],             // legacy
+  localFriends: [],        // [{ name, driveId, shareUrl, addedAt }]
+  isOwner: false,
+  localSavesPaths: {},
+  modpackDownloads: {},
+  profileExists: {},
+  storageQuota: null,
+  isFreeAccount: false,
+  activeWorldId: null,
+  activeWorldSavesPath: null,
+  activeWorldDriveId: null,
+  sessionStart: null,
+  sessionTimer: null,
+  pendingPlayId: null,
+  pendingJoinId: null,
+  pendingDeleteId: null,
+  modpackDownloaded: false,
+  joinModpackDownloaded: false,
+  pendingModpackWorldId: null,
+  addWorldPath: null,
+  addMrpackPath: null,
+  uploadMrpackPath: null,
+  mcListenersRegistered: false,
+}
+
+// ── INIT ──────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  const res = await window.craftsync.checkAuth()
+  if (res.success) {
+    state.user = res.account
+    await window.craftsync.setOnline({ account: res.account })
+    await enterApp()
+  }
+})
+
+// ── AUTH ──────────────────────────────────────────────────
+async function login() {
+  document.getElementById('loginError').classList.add('hidden')
+  const res = await window.craftsync.login()
+  if (res.success) {
+    state.user = res.account
+    await window.craftsync.setOnline({ account: res.account })
+    await enterApp()
+  } else {
+    showError('loginError', 'Sign in failed. Please try again.')
+  }
+}
+
+async function logout() {
+  stopAutoRefresh()
+  await window.craftsync.setOffline()
+  await window.craftsync.logout()
+  state.user = null
+  state.worlds = []
+  state.members = {}
+  document.getElementById('signinScreen').classList.remove('hidden')
+  document.getElementById('mainApp').classList.add('hidden')
+}
+
+async function enterApp() {
+  document.getElementById('signinScreen').classList.add('hidden')
+  document.getElementById('mainApp').classList.remove('hidden')
+  const initials = state.user.name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase()
+  document.getElementById('userAvatar').textContent = initials
+  document.getElementById('userName').textContent = state.user.name
+  document.getElementById('userEmail').textContent = state.user.username
+
+  // Load this machine's remembered saves paths and local data
+  state.localSavesPaths = await window.craftsync.getSavesPaths() || {}
+  state.modpackDownloads = await window.craftsync.getModpackDownloads() || {}
+
+  // Load local friends list
+  const friendsRes = await window.craftsync.listLocalFriends()
+  state.localFriends = friendsRes.friends || []
+
+  // Load storage quota
+  const quotaRes = await window.craftsync.getStorageQuota()
+  if (quotaRes.success) {
+    state.storageQuota = quotaRes
+    state.isFreeAccount = quotaRes.isFreeAccount
+    renderStorageBar()
+  }
+
+  // Always show friends section — everyone can add friends now
+  document.getElementById('friendsSection').classList.remove('hidden')
+  renderFriends()
+
+  await refreshWorlds()
+  startBackgroundWatcher()
+
+  // ── MC event listeners (register once) ───────────────────
+  if (!state.mcListenersRegistered) {
+    state.mcListenersRegistered = true
+
+    // MC closed after joining (no upload needed)
+    window.craftsync.onMcJoinClosed(({ code }) => {
+      // Nothing to upload — just update UI
+      renderWorlds()
+      renderPlayers()
+    })
+
+    // MC closed → trigger auto-upload UI feedback
+    window.craftsync.onMcClosed(({ code, worldId }) => {
+      if (state.sessionTimer) { clearInterval(state.sessionTimer); state.sessionTimer = null }
+      document.getElementById('activeBanner').classList.add('hidden')
+      const w = findWorld(worldId)
+      if (w) {
+        showBanner('uploadBanner', `Minecraft closed — uploading "${w.name}"...`, 'uploadText')
+      }
+    })
+
+    // Auto-upload succeeded
+    window.craftsync.onMcUploaded(({ worldId }) => {
+      hideBanner('uploadBanner')
+      const w = findWorld(worldId)
+      if (w) {
+        w.lockedBy = null
+        w.lastPlayer = state.user.name
+        w.lastPlayedAt = new Date().toISOString()
+      }
+      state.activeWorldId = null
+      state.activeWorldSavesPath = null
+      state.activeWorldDriveId = null
+      renderWorlds()
+      renderPlayers()
+      refreshStorageBar()
+    })
+
+    // Auto-upload failed
+    window.craftsync.onMcUploadError(({ worldId, error }) => {
+      hideBanner('uploadBanner')
+      const w = findWorld(worldId)
+      const name = w ? w.name : 'world'
+      // Show error in the play modal (reuse playError element) or alert
+      showToast('error', 'Auto-upload failed', `"${name}" — ${error}. Please upload manually.`)
+      state.activeWorldId = null
+      state.activeWorldSavesPath = null
+      state.activeWorldDriveId = null
+      renderWorlds()
+      renderPlayers()
+    })
+  }
+}
+
+// ── WORLDS ────────────────────────────────────────────────
+let lastRefreshTime = null
+let refreshCooldown = false
+const REFRESH_COOLDOWN_MS = 2000  // 2 second cooldown on manual refresh
+
+async function refreshWorlds() {
+  const [worldsRes, membersRes] = await Promise.all([
+    window.craftsync.listWorlds(),
+    window.craftsync.listMembers(),
+  ])
+  if (worldsRes.success) {
+    state.worlds = worldsRes.worlds || []
+
+    // Group friend worlds by owner name
+    state.friendWorlds = {}
+    for (const w of (worldsRes.friendWorlds || [])) {
+      const name = w._ownerName || 'Unknown'
+      if (!state.friendWorlds[name]) state.friendWorlds[name] = []
+      state.friendWorlds[name].push(w)
+    }
+
+    // Check profile exists for all worlds
+    const allWorlds = [...state.worlds, ...(worldsRes.friendWorlds || [])]
+    for (const w of allWorlds) {
+      if (w.modpack && !state.profileExists[w.id]) {
+        const res = await window.craftsync.checkProfileExists({ modpackName: w.modpack.name })
+        state.profileExists[w.id] = res.exists
+      }
+    }
+  }
+  if (membersRes.success) {
+    state.members = membersRes.members
+  }
+  lastRefreshTime = Date.now()
+  updateLastRefreshedLabel()
+  renderWorlds()
+  renderPlayers()
+}
+
+function updateLastRefreshedLabel() {
+  const el = document.getElementById('lastRefreshed')
+  if (!el || !lastRefreshTime) return
+  const s = Math.floor((Date.now() - lastRefreshTime) / 1000)
+  el.textContent = s < 5 ? 'just now' : `${s}s ago`
+}
+
+// Keep the "X seconds ago" label ticking every 5s
+setInterval(() => { if (lastRefreshTime) updateLastRefreshedLabel() }, 5000)
+
+async function manualRefresh() {
+  if (refreshCooldown) return
+  const btn = document.getElementById('refreshBtn')
+  btn.disabled = true
+  btn.classList.add('spinning')
+  refreshCooldown = true
+
+  await refreshWorlds()
+
+  btn.classList.remove('spinning')
+  setTimeout(() => {
+    btn.disabled = false
+    refreshCooldown = false
+  }, REFRESH_COOLDOWN_MS)
+}
+
+// ── Background watcher — polls worlds.json etag, only refreshes on change ──
+// This avoids the jarring full re-render every 30s.
+// Uses a lightweight HEAD/etag check so it doesn't re-download worlds.json
+// unless something actually changed.
+let bgWatcherRunning = false
+
+async function startBackgroundWatcher() {
+  if (bgWatcherRunning) return
+  bgWatcherRunning = true
+  let lastEtag = null
+  let lastMembersEtag = null
+  let lastFriendEtags = {}
+
+  const CHECK_INTERVAL = 8000 // check every 8s — lightweight etag only
+
+  const check = async () => {
+    if (state.activeWorldId) return // MC is running, skip
+    if (document.hidden) return     // window not visible, skip
+    try {
+      const res = await window.craftsync.checkWorldsChanged()
+      if (!res) return
+
+      const ownChanged = (res.worldsEtag && res.worldsEtag !== lastEtag) ||
+                         (res.membersEtag && res.membersEtag !== lastMembersEtag)
+
+      const friendChanged = Object.entries(res.friendEtags || {}).some(
+        ([driveId, etag]) => etag && etag !== lastFriendEtags[driveId]
+      )
+
+      if (ownChanged || friendChanged) {
+        lastEtag = res.worldsEtag || lastEtag
+        lastMembersEtag = res.membersEtag || lastMembersEtag
+        lastFriendEtags = { ...lastFriendEtags, ...(res.friendEtags || {}) }
+        await refreshWorlds()
+      }
+    } catch {}
+  }
+
+  setInterval(check, CHECK_INTERVAL)
+}
+
+function stopAutoRefresh() {
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval)
+    autoRefreshInterval = null
+  }
+}
+
+// Pause/resume when window visibility changes
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    stopAutoRefresh()
+  } else if (state.user) {
+    refreshWorlds()
+    startBackgroundWatcher()
+  }
+})
+
+// ── STORAGE BAR ───────────────────────────────────────────
+async function refreshStorageBar() {
+  try {
+    const quotaRes = await window.craftsync.getStorageQuota()
+    if (quotaRes.success) {
+      state.storageQuota = quotaRes
+      state.isFreeAccount = quotaRes.isFreeAccount
+      renderStorageBar()
+    }
+  } catch {}
+}
+
+function renderStorageBar() {
+  const q = state.storageQuota
+  if (!q) return
+
+  const usedGB = fmtSize(q.used)
+  const totalGB = fmtSize(q.total)
+  const csGB = q.craftSyncUsed ? fmtSize(q.craftSyncUsed) : null
+  const pct = q.total > 0 ? Math.min(100, (q.used / q.total) * 100) : 0
+  const csPct = q.craftSyncUsed && q.used > 0 ? Math.min(100, (q.craftSyncUsed / q.used) * 100) : 0
+  const isWarn = pct > 70
+  const isDanger = pct > 90
+
+  const wrap = document.getElementById('storageBarWrap')
+  const fill = document.getElementById('storageBarFill')
+  const csBar = document.getElementById('storageBarCS')
+  const label = document.getElementById('storageBarLabel')
+  const badge = document.getElementById('freeBadge')
+
+  wrap.classList.remove('hidden')
+  document.getElementById('storageUsedLabel').textContent = `${usedGB} used`
+  document.getElementById('storageTotalLabel').textContent = totalGB
+  fill.style.width = `${pct}%`
+  fill.style.background = isDanger ? 'var(--red)' : isWarn ? 'var(--yellow)' : 'var(--blue)'
+  label.className = `storage-bar-label${isDanger ? ' danger' : isWarn ? ' warn' : ''}`
+
+  if (csBar && csGB) {
+    csBar.style.width = `${csPct}%`
+    document.getElementById('storageCsLabel').textContent = `CraftSync ${csGB}`
+    document.getElementById('storageOtherLabel').textContent = `Other ${fmtSize(q.used - (q.craftSyncUsed || 0))}`
+  }
+
+  if (state.isFreeAccount) badge.classList.remove('hidden')
+}
+
+// Returns true if user can use advanced features (mods sync, cache upload)
+function canUseAdvancedFeatures() {
+  return !state.isFreeAccount
+}
+
+// Show a free account warning — returns true if user wants to proceed anyway
+async function warnFreeAccount(featureName) {
+  const msg = `⚠️ Storage limit warning\n\nYour OneDrive free plan only includes 5GB of storage.\n\n"${featureName}" can use significant storage space on top of your world files.\n\nWe recommend upgrading to Microsoft 365 (1TB storage) for the best experience, or using a friend's account as the host.\n\nContinue anyway?`
+  return await showConfirm('Free Account Warning', msg, 'Continue Anyway', 'background:var(--yellow);color:#000')
+}
+
+// Find a world across own + all friend worlds
+function findWorld(id) {
+  const own = state.worlds.find(w => w.id === id)
+  if (own) return own
+  for (const group of Object.values(state.friendWorlds)) {
+    const found = group.find(w => w.id === id)
+    if (found) return found
+  }
+  return null
+}
+
+function renderWorlds() {
+  const list = document.getElementById('worldsList')
+  const hasFriendWorlds = Object.keys(state.friendWorlds).length > 0
+  const hasOwnWorlds = state.worlds.length > 0
+
+  if (!hasOwnWorlds && !hasFriendWorlds) {
+    list.innerHTML = '<div class="empty-state"><div style="font-size:32px">🌍</div><p>No shared worlds yet — add one to get started!</p></div>'
+    return
+  }
+
+  list.innerHTML = ''
+
+  // ── Your worlds ───────────────────────────────────────────
+  if (hasOwnWorlds || !hasFriendWorlds) {
+    const section = document.createElement('div')
+    section.className = 'worlds-section'
+    if (hasFriendWorlds) {
+      section.innerHTML = `<div class="worlds-section-label">Your Worlds</div>`
+    }
+    list.appendChild(section)
+    state.worlds.forEach((w, i) => renderWorldCard(w, i, section))
+  }
+
+  // ── Friends' worlds ───────────────────────────────────────
+  for (const [friendName, worlds] of Object.entries(state.friendWorlds)) {
+    const section = document.createElement('div')
+    section.className = 'worlds-section'
+    section.innerHTML = `<div class="worlds-section-label">
+      <span style="font-size:16px">👤</span> ${friendName}'s Worlds
+    </div>`
+    list.appendChild(section)
+    worlds.forEach((w, i) => renderWorldCard(w, i, section))
+  }
+}
+
+function renderWorldCard(w, i, container) {
+    const lockedOther = w.lockedBy && w.lockedBy !== state.user.name
+    const lockedMe = w.lockedBy === state.user.name
+    const lastPlayed = w.lastPlayedAt ? timeAgo(w.lastPlayedAt) : 'Never'
+
+    const isCreator = !w.createdBy || w.createdBy === state.user.name
+    const isOwn = w._isOwn !== false // own worlds have _isOwn true or undefined
+
+    // Check if modpack is stale — compare updatedAt vs local last download
+    const modpackStale = w.modpack && (() => {
+      const lastDownloaded = state.modpackDownloads[w.id]
+      const lastUpdated = w.modpack.updatedAt
+      return lastUpdated && (!lastDownloaded || new Date(lastUpdated) > new Date(lastDownloaded))
+    })()
+
+    // Check if a matching Modrinth profile exists locally (cached in state)
+    const profileExists = w.modpack && state.profileExists?.[w.id]
+    const hasOverrides = w.modpack?.overrideFolders?.length > 0
+
+    const modpackStrip = w.modpack
+      ? `<div class="modpack-strip">
+          <div class="modpack-strip-left">
+            <div class="modpack-icon">📦</div>
+            <div class="modpack-info">
+              <span class="modpack-name">${w.modpack.name}</span>
+              <span class="modpack-meta">Updated ${timeAgo(w.modpack.updatedAt)}</span>
+            </div>
+          </div>
+          <div class="modpack-actions">
+            ${!profileExists
+              ? `<button class="btn-mp-dl" onclick="downloadModpack('${w.id}')" title="No matching Modrinth profile found — download and install this first">⬇ Install Pack</button>`
+              : hasOverrides && !state.isFreeAccount
+                ? `<button class="btn-mp-dl" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.35);color:var(--green)" id="syncModsBtn-${w.id}" onclick="syncMods('${w.id}')">⟳ Sync Mods</button>`
+                : `<button class="btn-mp-dl" onclick="downloadModpack('${w.id}')">⬇ Download .mrpack</button>`
+            }
+            ${isCreator && isOwn ? `<button class="btn-mp-up" onclick="showModpackModal('${w.id}')">↑ Update</button>` : ''}
+          </div>
+        </div>`
+      : `<div class="modpack-strip">
+          <div class="modpack-strip-left">
+            <div class="modpack-icon" style="opacity:0.35">📦</div>
+            <span class="no-modpack">No modpack attached</span>
+          </div>
+          <div class="modpack-actions">
+            ${isCreator && isOwn ? `<button class="btn-mp-up" onclick="showModpackModal('${w.id}')">↑ Upload .mrpack</button>` : ''}
+          </div>
+        </div>`
+
+    // Modpack update strip — free accounts only get Download .mrpack, not Sync Mods
+    const modpackUpdateStrip = modpackStale ? `
+      <div class="modpack-update-strip">
+        <div class="modpack-update-left">
+          <span>📦</span>
+          <span><strong>Modpack updated</strong> · ${timeAgo(w.modpack.updatedAt)} — update before playing</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          ${hasOverrides && profileExists && !state.isFreeAccount
+            ? `<button class="btn-mp-update" onclick="syncModsAndDismiss('${w.id}')">⟳ Sync Mods</button>`
+            : `<button class="btn-mp-update" onclick="downloadModpackFromCard('${w.id}')">⬇ Install Pack</button>`
+          }
+        </div>
+      </div>` : ''
+
+    const card = document.createElement('div')
+    card.className = `world-card${lockedOther ? ' locked' : ''}`
+    card.style.animationDelay = `${i * 0.06}s`
+
+    // Cache strip — completely hidden for free accounts
+    // Download available for all paid accounts, upload only for own worlds
+    const knownSavesPath = state.localSavesPaths[w.id]
+    const cacheStrip = knownSavesPath && !state.isFreeAccount ? `
+      <div class="cache-strip">
+        <div class="cache-strip-left">
+          <span style="font-size:14px">🗺</span>
+          <span>Distant Horizons / Voxy cache</span>
+          ${w.hasCache ? `<span style="font-size:9px;color:var(--green)">● synced</span>` : `<span style="font-size:9px;color:var(--text-dim)">● not synced</span>`}
+        </div>
+        <div style="display:flex;gap:6px">
+          ${isOwn ? `<button class="btn-cache" id="cacheUpBtn-${w.id}" onclick="uploadCache('${w.id}')">⬆ Upload</button>` : ''}
+          <button class="btn-cache" id="cacheDlHostBtn-${w.id}" onclick="downloadCache('${w.id}', 'host')" title="Download for hosting the world">⬇ Host</button>
+          <button class="btn-cache" id="cacheDlGuestBtn-${w.id}" onclick="downloadCache('${w.id}', 'guest')" title="Download for joining via Essential">⬇ Guest</button>
+        </div>
+      </div>` : ''
+
+    card.innerHTML = `
+      <div class="world-card-main">
+        <div class="world-icon ${w.theme || 'grass'}">${pixels(w.theme)}</div>
+        <div class="world-info">
+          <h3>${w.name}</h3>
+          <div class="world-meta">
+            <span class="meta-item"><span class="dot ${lockedOther ? 'dot-yellow' : 'dot-green'}"></span>${lockedOther ? `In use by ${w.lockedBy}` : lockedMe ? 'You are hosting' : 'Available'}</span>
+            <span class="meta-item">Last played: ${w.lastPlayer || 'Never'}${w.lastPlayer ? ' · ' + lastPlayed : ''}</span>
+            ${lockedOther ? '<span class="badge badge-yellow">IN USE</span>' : `<span class="badge badge-green">${lockedMe ? 'HOSTING' : 'READY'}</span>`}
+          </div>
+        </div>
+        <div class="world-actions">
+          <button class="btn-play" ${lockedMe || modpackStale ? 'disabled' : ''} onclick="${lockedOther ? `joinWorld('${w.id}')` : `playWorld('${w.id}')`}" title="${modpackStale ? 'Download the updated modpack before playing' : ''}">
+            ${lockedOther ? '⚡ Join' : lockedMe ? '⏳ Hosting' : modpackStale ? '🔒 Update Required' : '▶ Play'}
+          </button>
+          ${isCreator && isOwn ? `<button class="btn-delete" onclick="confirmDeleteWorld('${w.id}')">🗑 Delete</button>` : ''}
+        </div>
+      </div>
+      ${modpackUpdateStrip}
+      ${modpackStrip}
+      ${cacheStrip}`
+    container.appendChild(card)
+}
+
+function renderPlayers() {
+  const list = document.getElementById('playersList')
+  const members = Object.values(state.members)
+
+  if (members.length === 0) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:8px 0">Nobody is online yet.</div>'
+    return
+  }
+
+  const sorted = [...members].sort((a, b) => {
+    const scoreA = a.status === 'online' ? 0 : 1
+    const scoreB = b.status === 'online' ? 0 : 1
+    return scoreA - scoreB
+  })
+
+  list.innerHTML = ''
+  sorted.forEach(member => {
+    const isOnline = member.status === 'online'
+    const hostedWorld = state.worlds.find(w => w.lockedBy === member.name)
+    const initials = member.name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase()
+
+    let statusText, statusColor
+    if (hostedWorld) {
+      statusText = `Hosting ${hostedWorld.name}`
+      statusColor = 'var(--yellow)'
+    } else if (isOnline) {
+      statusText = 'Online'
+      statusColor = 'var(--green)'
+    } else {
+      statusText = 'Offline'
+      statusColor = 'var(--text-dim)'
+    }
+
+    const row = document.createElement('div')
+    row.className = 'player-row'
+    row.innerHTML = `
+      <div class="player-avatar" style="background:${isOnline ? 'var(--green)' : '#333'};color:${isOnline ? '#0a0c0f' : 'var(--text-dim)'}">
+        ${initials}
+        <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
+      </div>
+      <span class="player-name" style="color:${isOnline ? 'var(--text)' : 'var(--text-dim)'}">${member.name}</span>
+      <span class="player-status" style="color:${statusColor}">${statusText}</span>`
+    list.appendChild(row)
+  })
+
+  // Update friends list too
+  renderFriends()
+}
+function renderFriends() {
+  const list = document.getElementById('friendsList')
+  if (!list) return
+  if (state.localFriends.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-dim);padding:8px 0">No friends added yet — click + Add Friend to get started.</div>'
+    return
+  }
+  list.innerHTML = ''
+  state.localFriends.forEach(friend => {
+    const initials = friend.name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase()
+    const row = document.createElement('div')
+    row.className = 'player-row'
+    row.innerHTML = `
+      <div class="player-avatar" style="background:var(--purple-dim);color:var(--purple);border:1px solid rgba(167,139,250,0.3)">
+        ${initials}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;">${friend.name}</div>
+        <div style="font-size:11px;color:var(--text-dim)">Added ${timeAgo(friend.addedAt)}</div>
+      </div>
+      <button onclick="removeLocalFriend('${friend.driveId}')" style="font-size:11px;background:transparent;border:1px solid rgba(255,255,255,0.1);color:var(--text-dim);padding:5px 10px;border-radius:5px;cursor:pointer;transition:all 0.2s"
+        onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='var(--text-dim)'">Remove</button>`
+    list.appendChild(row)
+  })
+}
+
+function showInviteModal() {
+  document.getElementById('myInviteCode').value = ''
+  document.getElementById('friendInviteCode').value = ''
+  document.getElementById('generateError').classList.add('hidden')
+  document.getElementById('redeemError').classList.add('hidden')
+  document.getElementById('copyCodeBtn').style.display = 'none'
+  document.getElementById('generateCodeBtn').style.display = ''
+  document.getElementById('inviteModal').classList.remove('hidden')
+}
+
+function closeInviteModal() {
+  document.getElementById('inviteModal').classList.add('hidden')
+}
+
+async function generateInviteCode() {
+  const btn = document.getElementById('generateCodeBtn')
+  btn.textContent = 'Generating...'
+  btn.disabled = true
+  const res = await window.craftsync.generateInvite()
+  btn.disabled = false
+  if (res.success) {
+    document.getElementById('myInviteCode').value = res.code
+    btn.style.display = 'none'
+    document.getElementById('copyCodeBtn').style.display = ''
+    document.getElementById('generateError').classList.add('hidden')
+  } else {
+    btn.textContent = 'Generate'
+    showError('generateError', res.error || 'Failed to generate code.')
+  }
+}
+
+function copyInviteCode() {
+  const code = document.getElementById('myInviteCode').value
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('copyCodeBtn')
+    btn.textContent = '✓ Copied!'
+    setTimeout(() => btn.textContent = 'Copy', 2000)
+  })
+}
+
+async function redeemInviteCode() {
+  const code = document.getElementById('friendInviteCode').value.trim()
+  if (!code) { showError('redeemError', 'Please paste your friend\'s invite code.'); return }
+  document.getElementById('redeemError').classList.add('hidden')
+
+  const res = await window.craftsync.redeemInvite({ code })
+  if (res.success) {
+    state.localFriends.push(res.friend)
+    renderFriends()
+    document.getElementById('friendInviteCode').value = ''
+    showToast('success', `${res.friend.name} added!`, 'Their worlds will appear below yours. Make sure they add your code too.')
+    refreshWorlds()
+  } else {
+    showError('redeemError', res.error || 'Failed to redeem code.')
+  }
+}
+
+async function removeLocalFriend(driveId) {
+  const friend = state.localFriends.find(f => f.driveId === driveId)
+  if (!friend) return
+  const confirmed = await showConfirm(`Remove ${friend.name}?`, `You'll no longer see their worlds and they won't see yours (once they remove you too).`, 'Remove', 'background:var(--red);color:#fff;border-color:var(--red)')
+  if (!confirmed) return
+  const res = await window.craftsync.removeLocalFriend({ driveId })
+  if (res.success) {
+    state.localFriends = state.localFriends.filter(f => f.driveId !== driveId)
+    delete state.friendWorlds[friend.name]
+    renderFriends()
+    renderWorlds()
+    showToast('info', `${friend.name} removed`, 'Their worlds are no longer visible.')
+  }
+}
+
+// ── TOAST & CONFIRM ───────────────────────────────────────
+const TOAST_ICONS = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' }
+
+function fmtSize(bytes) {
+  if (bytes === null || bytes === undefined) return '—'
+  const kb = bytes / 1024
+  const mb = kb / 1024
+  const gb = mb / 1024
+  const tb = gb / 1024
+  if (tb >= 1)  return `${tb.toFixed(2)} TB`
+  if (gb >= 1)  return `${gb.toFixed(2)} GB`
+  if (mb >= 1)  return `${mb.toFixed(0)} MB`
+  return `${kb.toFixed(0)} KB`
+}
+
+function showToast(type, title, message, duration = 5000) {
+  const container = document.getElementById('toastContainer')
+  const toast = document.createElement('div')
+  toast.className = `toast ${type}`
+  toast.innerHTML = `
+    <span class="toast-icon">${TOAST_ICONS[type] || 'ℹ️'}</span>
+    <div class="toast-body">
+      <div class="toast-title">${title}</div>
+      ${message ? `<div class="toast-msg">${message}</div>` : ''}
+    </div>
+    <button class="toast-close" onclick="this.closest('.toast').remove()">×</button>`
+  container.appendChild(toast)
+  if (duration > 0) setTimeout(() => {
+    toast.style.animation = 'slideIn 0.25s ease reverse'
+    setTimeout(() => toast.remove(), 250)
+  }, duration)
+  return toast
+}
+
+function showConfirm(title, message, okLabel = 'Confirm', okStyle = '') {
+  return new Promise(resolve => {
+    document.getElementById('confirmTitle').textContent = title
+    document.getElementById('confirmMessage').textContent = message
+    const okBtn = document.getElementById('confirmOkBtn')
+    const cancelBtn = document.getElementById('confirmCancelBtn')
+    okBtn.textContent = okLabel
+    okBtn.style.cssText = okStyle
+    document.getElementById('confirmModal').classList.remove('hidden')
+    const cleanup = () => document.getElementById('confirmModal').classList.add('hidden')
+    okBtn.onclick = () => { cleanup(); resolve(true) }
+    cancelBtn.onclick = () => { cleanup(); resolve(false) }
+  })
+}
+
+// ── CACHE ─────────────────────────────────────────────────
+async function uploadCache(worldId, force = false) {
+  const savesPath = state.localSavesPaths[worldId]
+  if (!savesPath) { showToast('warning', 'Saves path unknown', 'Please play this world once first so CraftSync knows where your profile is.'); return }
+
+  const btn = document.getElementById(`cacheUpBtn-${worldId}`)
+  const w = findWorld(worldId)
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Uploading...' }
+  showBanner('uploadBanner', `Uploading cache for "${w?.name}"...`, 'uploadText')
+
+  const res = await window.craftsync.uploadCache({ worldId, localSavesPath: savesPath, force, driveId: w?._driveId || null })
+
+  hideBanner('uploadBanner')
+  if (btn) { btn.disabled = false; btn.textContent = '⬆ Upload' }
+
+  if (res.blocked) {
+    const msg = `Your local cache is smaller than what's on OneDrive:\n\n${res.error}\n\nThis usually means you haven't explored as much as whoever uploaded last. Overwrite OneDrive with your smaller cache anyway?`
+    const confirmed = await showConfirm('⚠️ Upload Blocked', msg, 'Overwrite Anyway', 'background:var(--red);color:#fff;border-color:var(--red)')
+    if (confirmed) uploadCache(worldId, true)
+  } else if (res.success) {
+    if (w) w.hasCache = true
+    renderWorlds()
+    showToast('success', 'Cache uploaded', res.message)
+    refreshStorageBar()
+  } else {
+    showToast('error', 'Upload failed', res.error)
+  }
+}
+
+async function downloadCache(worldId, mode = 'host') {
+  const savesPath = state.localSavesPaths[worldId]
+  if (!savesPath) { showToast('warning', 'Saves path unknown', 'Please play this world once first so CraftSync knows where your profile is.'); return }
+
+  const w = findWorld(worldId)
+  const btnId = mode === 'host' ? `cacheDlHostBtn-${worldId}` : `cacheDlGuestBtn-${worldId}`
+  const btn = document.getElementById(btnId)
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ ...' }
+  showBanner('downloadBanner', `Downloading ${mode} cache for "${w?.name}"...`, 'downloadText')
+
+  const res = await window.craftsync.downloadCache({ worldId, localSavesPath: savesPath, mode, driveId: w?._driveId || null })
+
+  hideBanner('downloadBanner')
+  if (btn) { btn.disabled = false; btn.textContent = mode === 'host' ? '⬇ Host' : '⬇ Guest' }
+
+  if (res.noCache) {
+    showToast('warning', 'No cache uploaded yet', 'The host needs to upload their cache first using the ⬆ Upload button.')
+  } else if (res.needsJoin) {
+    showToast('warning', 'Join a session first', res.error, 10000)
+  } else if (res.success) {
+    const allSkipped = res.downloaded?.every(d => d.includes('skipped'))
+    const someSkipped = res.downloaded?.some(d => d.includes('skipped'))
+    if (allSkipped) {
+      showToast('info', 'Cache already up to date', `Your local cache is the same size or larger — no download needed.`, 6000)
+    } else if (someSkipped) {
+      const downloaded = res.downloaded?.filter(d => !d.includes('skipped')).join(', ')
+      const skipped = res.downloaded?.filter(d => d.includes('skipped')).map(d => d.replace(' (already up to date — skipped)', '')).join(', ')
+      showToast('success', 'Cache partially downloaded', `Downloaded: ${downloaded}. Skipped (already up to date): ${skipped}. Restart Minecraft to apply.`, 10000)
+    } else {
+      showToast('success', 'Cache downloaded', `${res.message} — restart Minecraft for it to take effect.`, 8000)
+    }
+  } else {
+    showToast('error', 'Download failed', res.error)
+  }
+}
+function playWorld(id) {
+  state.pendingPlayId = id
+  state.modpackDownloaded = false
+  const w = findWorld(id)
+  document.getElementById('playModalTitle').textContent = `Play "${w.name}"?`
+  document.getElementById('playModalDesc').textContent = `The latest save will be downloaded from OneDrive into your Modrinth saves folder. When you stop, it auto-uploads back.`
+
+  const hasModpack = !!w.modpack
+  document.getElementById('modpackPlaySection').classList.toggle('hidden', !hasModpack)
+  document.getElementById('noModpackInfo').classList.toggle('hidden', hasModpack)
+  document.getElementById('skipModpackWarning').classList.add('hidden')
+  document.getElementById('modpackUpdateWarning').classList.add('hidden')
+
+  if (hasModpack) {
+    document.getElementById('modpackPlayName').textContent = w.modpack.name
+
+    // Check if modpack was updated since last download
+    const lastDownloaded = state.modpackDownloads[w.id]
+    const lastUpdated = w.modpack.updatedAt
+    const isStale = lastUpdated && (!lastDownloaded || new Date(lastUpdated) > new Date(lastDownloaded))
+
+    if (isStale) {
+      document.getElementById('modpackUpdateWarning').classList.remove('hidden')
+      document.getElementById('modpackUpdateText').textContent = lastDownloaded
+        ? `Updated ${timeAgo(lastUpdated)} — you last downloaded it ${timeAgo(lastDownloaded)}.`
+        : `The host has uploaded a modpack — download it before playing.`
+      // Reset button to force re-download
+      document.getElementById('modpackDlBtn').textContent = '⬇ Download Update'
+      document.getElementById('modpackDlBtn').className = 'btn-mp-inline'
+      document.getElementById('modpackPlayRow').className = 'modal-modpack-row'
+    } else {
+      document.getElementById('modpackDlBtn').textContent = '⬇ Download'
+      document.getElementById('modpackDlBtn').className = 'btn-mp-inline'
+      document.getElementById('modpackPlayRow').className = 'modal-modpack-row'
+    }
+  }
+
+  document.getElementById('modsConfirmedLabel').textContent = hasModpack
+    ? `I have the correct modpack installed in Modrinth`
+    : `I confirm everyone is on the same mods and Minecraft version`
+  document.getElementById('modsConfirmed').checked = false
+  document.getElementById('playConfirmBtn').disabled = true
+  document.getElementById('playError').classList.add('hidden')
+  document.getElementById('playModal').classList.remove('hidden')
+}
+
+async function downloadModpackInline() {
+  const w = findWorld(state.pendingPlayId)
+  if (!w?.modpack) return
+  document.getElementById('modpackDlBtn').textContent = '...'
+  const res = await window.craftsync.downloadModpack({ worldId: w.id, driveId: w?._driveId || null })
+  if (res.success) {
+    state.modpackDownloaded = true
+    // Record locally that we downloaded this modpack version
+    state.modpackDownloads[w.id] = new Date().toISOString()
+    window.craftsync.saveModpackDownload({ worldId: w.id })
+    document.getElementById('modpackDlBtn').textContent = '✓ Downloaded'
+    document.getElementById('modpackDlBtn').className = 'btn-mp-inline done'
+    document.getElementById('modpackPlayRow').className = 'modal-modpack-row downloaded'
+    document.getElementById('skipModpackWarning').classList.add('hidden')
+    showToast('success', 'Modpack downloaded!', `"${w.modpack.name}.mrpack" saved to Downloads. Open Modrinth → Import, then come back and hit Play.`, 12000)
+  } else {
+    document.getElementById('modpackDlBtn').textContent = '⬇ Download'
+    showError('playError', 'Download failed: ' + res.error)
+  }
+}
+
+function onModsCheckChange() {
+  const checked = document.getElementById('modsConfirmed').checked
+  const w = findWorld(state.pendingPlayId)
+  if (checked && w?.modpack && !state.modpackDownloaded) {
+    document.getElementById('skipModpackWarning').classList.remove('hidden')
+  } else {
+    document.getElementById('skipModpackWarning').classList.add('hidden')
+  }
+  document.getElementById('playConfirmBtn').disabled = !checked
+}
+
+async function confirmPlay(forceOverwrite = false) {
+  const w = findWorld(state.pendingPlayId)
+  if (!w) return
+  closePlayModal()
+
+  // Use remembered path if available — only ask if we don't know it yet
+  let savesPath = state.localSavesPaths[w.id] || null
+  if (!savesPath) {
+    savesPath = await window.craftsync.openFolder()
+    if (!savesPath) return
+    if (!savesPath.toLowerCase().includes('saves')) {
+      const confirmed = await showConfirm(
+        'Folder check',
+        `Selected folder:\n${savesPath}\n\nThis doesn't look like a saves folder. Make sure you select the 'saves' folder inside your Modrinth profile.`,
+        'Continue anyway'
+      )
+      if (!confirmed) return
+    }
+    // Save it so we never ask again
+    state.localSavesPaths[w.id] = savesPath
+    window.craftsync.saveSavesPath({ worldId: w.id, localSavesPath: savesPath })
+  }
+
+  showBanner('downloadBanner', `Downloading "${w.name}" from OneDrive...`, 'downloadText')
+  const res = await window.craftsync.playWorld({
+    worldId: w.id,
+    localSavesPath: savesPath,
+    userName: state.user.name,
+    forceOverwrite,
+  })
+  hideBanner('downloadBanner')
+
+  if (res.modMismatch) {
+    await refreshWorlds()
+    showModMismatchModal(res.missing || [], res.extra || [])
+    return
+  }
+
+  if (res.modifiedWarning) {
+    w.lockedBy = null
+    renderWorlds()
+    renderPlayers()
+
+    const proceed = await showConfirm('⚠️ Local changes detected', `${res.error}\n\nOverwrite your local copy with the OneDrive version?`, 'Overwrite', 'background:var(--yellow);color:#000')
+    if (proceed) {
+      // Re-run with forceOverwrite flag — saves path already remembered
+      state.pendingPlayId = w.id
+      showBanner('downloadBanner', `Downloading "${w.name}" from OneDrive...`, 'downloadText')
+      const retryRes = await window.craftsync.playWorld({
+        worldId: w.id,
+        driveId: w._driveId || null,
+        localSavesPath: savesPath,
+        userName: state.user.name,
+        forceOverwrite: true,
+      })
+      hideBanner('downloadBanner')
+      if (retryRes.success) {
+        if (state.localSavesPaths[w.id] !== savesPath) {
+          state.localSavesPaths[w.id] = savesPath
+          window.craftsync.saveSavesPath({ worldId: w.id, localSavesPath: savesPath })
+        }
+        state.activeWorldId = w.id
+        state.activeWorldSavesPath = savesPath
+        state.activeWorldDriveId = w._driveId || null
+        state.sessionStart = Date.now()
+        w.lockedBy = state.user.name
+        renderWorlds()
+        renderPlayers()
+        document.getElementById('activeName').textContent = `Playing: ${w.name}`
+        document.getElementById('activeBanner').classList.remove('hidden')
+        startTimer()
+      } else {
+        showError('playError', retryRes.error)
+        document.getElementById('playModal').classList.remove('hidden')
+      }
+    } else {
+      // User cancelled — unlock the world
+      await refreshWorlds()
+    }
+    return
+  }
+
+  if (res.success) {
+    if (state.localSavesPaths[w.id] !== savesPath) {
+      state.localSavesPaths[w.id] = savesPath
+      window.craftsync.saveSavesPath({ worldId: w.id, localSavesPath: savesPath })
+    }
+    state.activeWorldId = w.id
+    state.activeWorldSavesPath = savesPath
+    state.activeWorldDriveId = w._driveId || null
+    state.sessionStart = Date.now()
+    w.lockedBy = state.user.name
+    renderWorlds()
+    renderPlayers()
+    document.getElementById('activeName').textContent = `Playing: ${w.name}`
+    document.getElementById('activeBanner').classList.remove('hidden')
+    startTimer()
+  } else {
+    showError('playError', res.error)
+    document.getElementById('playModal').classList.remove('hidden')
+  }
+}
+
+function closePlayModal() {
+  document.getElementById('playModal').classList.add('hidden')
+  state.pendingPlayId = null
+  state.modpackDownloaded = false
+}
+
+// ── JOIN FLOW ─────────────────────────────────────────────
+function joinWorld(id) {
+  state.pendingJoinId = id
+  state.joinModpackDownloaded = false
+  const w = findWorld(id)
+  document.getElementById('joinModalTitle').textContent = `Join "${w.name}"?`
+  document.getElementById('joinModalDesc').textContent =
+    `${w.lockedBy} is hosting. Minecraft will launch and Essential will let you join their world.`
+
+  const hasModpack = !!w.modpack
+  document.getElementById('joinModpackSection').classList.toggle('hidden', !hasModpack)
+  document.getElementById('joinNoModpackInfo').classList.toggle('hidden', hasModpack)
+
+  if (hasModpack) {
+    document.getElementById('joinModpackName').textContent = w.modpack.name
+    document.getElementById('joinModpackDlBtn').textContent = '⬇ Download'
+    document.getElementById('joinModpackDlBtn').className = 'btn-mp-inline'
+    document.getElementById('joinModpackRow').className = 'modal-modpack-row'
+  }
+
+  document.getElementById('joinModsConfirmedLabel').textContent = hasModpack
+    ? `I have the correct modpack installed in Modrinth`
+    : `I confirm I have the same mods and Minecraft version as the host`
+  document.getElementById('joinModsConfirmed').checked = false
+  document.getElementById('joinConfirmBtn').disabled = true
+  document.getElementById('joinError').classList.add('hidden')
+  document.getElementById('joinModal').classList.remove('hidden')
+}
+
+async function downloadModpackForJoin() {
+  const w = findWorld(state.pendingJoinId)
+  if (!w?.modpack) return
+  document.getElementById('joinModpackDlBtn').textContent = '...'
+  const res = await window.craftsync.downloadModpack({ worldId: w.id, driveId: w?._driveId || null })
+  if (res.success) {
+    state.joinModpackDownloaded = true
+    document.getElementById('joinModpackDlBtn').textContent = '✓ Downloaded'
+    document.getElementById('joinModpackDlBtn').className = 'btn-mp-inline done'
+    document.getElementById('joinModpackRow').className = 'modal-modpack-row downloaded'
+    showToast('success', 'Modpack downloaded!', `"${w.modpack.name}.mrpack" saved to Downloads. Open Modrinth → Import, then come back and hit Launch & Join.`, 12000)
+  } else {
+    document.getElementById('joinModpackDlBtn').textContent = '⬇ Download'
+    showError('joinError', 'Download failed: ' + res.error)
+  }
+}
+
+function onJoinCheckChange() {
+  document.getElementById('joinConfirmBtn').disabled =
+    !document.getElementById('joinModsConfirmed').checked
+}
+
+async function confirmJoin() {
+  const w = findWorld(state.pendingJoinId)
+  if (!w) return
+  closeJoinModal()
+
+  const res = await window.craftsync.joinWorld({
+    worldId: w.id,
+    userName: state.user.name,
+  })
+
+  if (!res.success) {
+    showError('joinError', res.error)
+    document.getElementById('joinModal').classList.remove('hidden')
+  }
+}
+
+function closeJoinModal() {
+  document.getElementById('joinModal').classList.add('hidden')
+  state.pendingJoinId = null
+  state.joinModpackDownloaded = false
+}
+
+async function stopSession() {
+  if (state.sessionTimer) { clearInterval(state.sessionTimer); state.sessionTimer = null }
+  document.getElementById('activeBanner').classList.add('hidden')
+  const w = findWorld(state.activeWorldId)
+  if (!w) return
+
+  showBanner('uploadBanner', `Uploading "${w.name}" to OneDrive...`, 'uploadText')
+  const res = await window.craftsync.uploadWorld({
+    worldId: w.id,
+    localSavesPath: state.activeWorldSavesPath,
+    userName: state.user.name,
+    driveId: state.activeWorldDriveId,
+  })
+  hideBanner('uploadBanner')
+
+  w.lockedBy = null
+  w.lastPlayer = state.user.name
+  w.lastPlayedAt = new Date().toISOString()
+  state.activeWorldId = null
+  state.activeWorldSavesPath = null
+  renderWorlds()
+  renderPlayers()
+  refreshStorageBar()
+}
+
+function startTimer() {
+  if (state.sessionTimer) clearInterval(state.sessionTimer)
+  state.sessionTimer = setInterval(() => {
+    const s = Math.floor((Date.now() - state.sessionStart) / 1000)
+    document.getElementById('activeTimer').textContent =
+      `Session running — ${Math.floor(s/60)}m ${(s%60).toString().padStart(2,'0')}s`
+  }, 1000)
+}
+
+// ── ADD WORLD ─────────────────────────────────────────────
+function showAddModal() { document.getElementById('addModal').classList.remove('hidden') }
+function closeAddModal() {
+  document.getElementById('addModal').classList.add('hidden')
+  document.getElementById('newWorldName').value = ''
+  document.getElementById('newWorldPath').value = ''
+  document.getElementById('addMrpackLabel').value = ''
+  document.getElementById('addError').classList.add('hidden')
+  state.addWorldPath = null; state.addMrpackPath = null
+  document.getElementById('worldSizeHint').textContent = ''
+}
+
+async function browseWorldFolder() {
+  const p = await window.craftsync.openFolder()
+  if (p && p !== null && p !== '') {
+    state.addWorldPath = p
+    document.getElementById('newWorldPath').value = p
+    if (!document.getElementById('newWorldName').value) {
+      document.getElementById('newWorldName').value = p.split('\\').pop() || p.split('/').pop()
+    }
+
+    // Check folder size and show hint
+    const hint = document.getElementById('worldSizeHint')
+    hint.textContent = '⏳ Calculating size...'
+    hint.style.color = 'var(--text-dim)'
+    const res = await window.craftsync.getFolderSize({ folderPath: p })
+    if (res.success) {
+      const gb = res.size / 1024 / 1024 / 1024
+      const sizeStr = fmtSize(res.size)
+      if (gb >= 10) {
+        hint.innerHTML = `🔴 World is ${sizeStr} (excluding caches) — extremely large. Upload will work but expect 30+ minutes. We recommend keeping worlds under 2GB for the best experience.`
+        hint.style.color = 'var(--red)'
+      } else if (gb >= 4) {
+        hint.innerHTML = `🟠 World is ${sizeStr} (excluding caches) — very large (~5,000–10,000 chunk area). Will take a while to upload. We recommend keeping worlds under 2GB for the best experience.`
+        hint.style.color = 'var(--orange)'
+      } else if (gb >= 2) {
+        hint.innerHTML = `🟡 World is ${sizeStr} (excluding caches) — larger than recommended. Upload should work fine but may take several minutes. Worlds under 2GB sync fastest.`
+        hint.style.color = 'var(--yellow)'
+      } else {
+        hint.innerHTML = `✅ World is ${sizeStr} (excluding caches) — good size for syncing.`
+        hint.style.color = 'var(--green)'
+      }
+    } else {
+      hint.textContent = ''
+    }
+  }
+}
+
+async function browseAddMrpack() {
+  const p = await window.craftsync.openMrpack()
+  if (p) {
+    state.addMrpackPath = p
+    document.getElementById('addMrpackLabel').value = p.split('\\').pop() || p.split('/').pop()
+  }
+}
+
+async function confirmAdd() {
+  const name = document.getElementById('newWorldName').value.trim()
+  const localPath = document.getElementById('newWorldPath').value.trim() || state.addWorldPath
+  const mrpackPath = state.addMrpackPath
+
+  if (!name) { showError('addError', 'Please enter a world name.'); return }
+  if (!localPath) { showError('addError', 'Please select the world save folder.'); return }
+  if (!mrpackPath) { showError('addError', 'Please select the .mrpack file for this profile.'); return }
+
+  closeAddModal()
+  showBanner('uploadBanner', `Uploading "${name}" to OneDrive...`, 'uploadText')
+  const res = await window.craftsync.addWorld({ name, localPath, mrpackPath, userName: state.user.name })
+  hideBanner('uploadBanner')
+
+  if (res.success) {
+    state.worlds.push(res.world)
+    // Store saves path immediately so cache/sync works without playing first
+    if (res.localSavesPath) {
+      state.localSavesPaths[res.world.id] = res.localSavesPath
+    }
+    // Creator already has the pack installed — mark as downloaded so no stale warning
+    if (res.world.modpack) {
+      state.modpackDownloads[res.world.id] = new Date().toISOString()
+      window.craftsync.saveModpackDownload({ worldId: res.world.id })
+    }
+    if (res.world.modpack?.overrideFolders?.length) {
+      showToast('success', 'World added', `Uploaded with ${res.world.modpack.overrideFolders.join(', ')} — friends can use ⟳ Sync Mods.`)
+    } else {
+      showToast('success', 'World added', `"${name}" is now available to your friends.`)
+    }
+    refreshWorlds()
+    refreshStorageBar()
+    // User cancelled — do nothing, toast already shown by cancelOperation()
+  } else {
+    showError('addError', res.error)
+    document.getElementById('addModal').classList.remove('hidden')
+  }
+}
+
+// -- DELETE WORLD
+function confirmDeleteWorld(id) {
+  state.pendingDeleteId = id
+  const w = findWorld(id)
+  document.getElementById('deleteModalDesc').textContent = `Are you sure you want to delete "${w.name}"? This will remove it from OneDrive for all friends.`
+  document.getElementById('deleteModal').classList.remove('hidden')
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteModal').classList.add('hidden')
+  state.pendingDeleteId = null
+}
+
+async function confirmDelete() {
+  const id = state.pendingDeleteId
+  closeDeleteModal()
+  showBanner('uploadBanner', 'Deleting world from OneDrive...', 'uploadText')
+  const res = await window.craftsync.deleteWorld({ worldId: id, userName: state.user.name, driveId: findWorld(id)?._driveId || null })
+  hideBanner('uploadBanner')
+  if (res.success) {
+    state.worlds = state.worlds.filter(w => w.id !== id)
+    renderWorlds()
+    renderPlayers()
+  } else {
+    showToast('error', 'Delete failed', res.error)
+  }
+}
+
+// ── MODPACK MODAL ─────────────────────────────────────────
+function showModpackModal(id) {
+  state.pendingModpackWorldId = id
+  const w = findWorld(id)
+  document.getElementById('modpackModalTitle').textContent = w.modpack ? 'Update Modpack' : 'Upload Modpack'
+  document.getElementById('modpackModalDesc').textContent = w.modpack
+    ? `Replace the current modpack for "${w.name}". Friends will see the update next time they open the app.`
+    : `Upload a .mrpack export for "${w.name}". Friends will be reminded to install it before playing.`
+  document.getElementById('modpackFileLabel').value = ''
+  document.getElementById('modpackError').classList.add('hidden')
+  state.uploadMrpackPath = null
+  document.getElementById('modpackModal').classList.remove('hidden')
+}
+
+function closeModpackModal() {
+  document.getElementById('modpackModal').classList.add('hidden')
+  state.pendingModpackWorldId = null
+  state.uploadMrpackPath = null
+  document.getElementById('modpackFileLabel').value = ''
+}
+
+async function browseUploadMrpack() {
+  const p = await window.craftsync.openMrpack()
+  if (p) {
+    state.uploadMrpackPath = p
+    document.getElementById('modpackFileLabel').value = p.split('\\').pop() || p.split('/').pop()
+  }
+}
+
+async function confirmUploadModpack() {
+  if (!state.uploadMrpackPath) { showError('modpackError', 'Please select a .mrpack file.'); return }
+  const w = findWorld(state.pendingModpackWorldId)
+  if (!w) return
+
+  // Need saves path to find the profile dir — ask if not already known
+  let savesPath = state.localSavesPaths[w.id] || null
+  if (!savesPath) {
+    showToast('info', 'Select saves folder', 'Select the saves folder for this profile so CraftSync can find the mods to upload.')
+    savesPath = await window.craftsync.openFolder()
+    if (!savesPath) return
+    state.localSavesPaths[w.id] = savesPath
+    window.craftsync.saveSavesPath({ worldId: w.id, localSavesPath: savesPath })
+  }
+
+  const mrpackPath = state.uploadMrpackPath
+  closeModpackModal()
+  showBanner('modpackBanner', `Uploading modpack for "${w.name}"...`, 'modpackText')
+  const res = await window.craftsync.uploadModpack({
+    worldId: w.id,
+    mrpackPath,
+    localSavesPath: savesPath,
+    driveId: w._driveId || null,
+    skipFolders: state.isFreeAccount,
+  })
+  hideBanner('modpackBanner')
+  if (res.success) {
+    w.modpack = res.modpack
+    // Uploader already has the pack — mark as downloaded so no stale warning for them
+    state.modpackDownloads[w.id] = new Date().toISOString()
+    window.craftsync.saveModpackDownload({ worldId: w.id })
+    renderWorlds()
+    if (res.uploadedFolders?.length || res.skippedFolders?.length) {
+      const parts = []
+      if (res.uploadedFolders?.length) parts.push(`Uploaded: ${res.uploadedFolders.join(', ')}`)
+      if (res.skippedFolders?.length) parts.push(`Unchanged (skipped): ${res.skippedFolders.join(', ')}`)
+      showToast('success', 'Modpack updated', parts.join(' · '))
+    } else {
+      showToast('warning', 'Modpack uploaded', 'No mod folders found in profile directory.')
+    }
+    refreshStorageBar()
+  } else {
+    showToast('error', 'Upload failed', res.error)
+  }
+}
+
+// ── MODPACK DOWNLOAD (from card) ──────────────────────────
+async function downloadModpack(id) {
+  const w = findWorld(id); if (!w?.modpack) return
+  showBanner('modpackBanner', `Downloading "${w.modpack.name}"...`, 'modpackText')
+  const res = await window.craftsync.downloadModpack({ worldId: id, driveId: findWorld(id)?._driveId || null })
+  hideBanner('modpackBanner')
+  if (res.success) {
+    // Record download timestamp
+    state.modpackDownloads[id] = new Date().toISOString()
+    window.craftsync.saveModpackDownload({ worldId: id })
+    showToast('success', 'Modpack downloaded', `"${w.modpack.name}.mrpack" saved to Downloads!\n\nInstall in Modrinth then come back to play.`, 10000)
+    renderWorlds()
+  }
+}
+
+async function syncMods(worldId) {
+  const savesPath = state.localSavesPaths[worldId]
+  if (!savesPath) { showToast('warning', 'Saves path unknown', 'Please play this world once first so CraftSync knows where your profile is.'); return }
+
+  const w = findWorld(worldId)
+  const btn = document.getElementById(`syncModsBtn-${worldId}`)
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Syncing...' }
+  showBanner('downloadBanner', `Syncing mods for "${w?.name}"...`, 'downloadText')
+
+  const res = await window.craftsync.syncMods({ worldId, localSavesPath: savesPath, driveId: w?._driveId || null })
+
+  hideBanner('downloadBanner')
+  if (btn) { btn.disabled = false; btn.textContent = '⟳ Sync Mods' }
+
+  if (res.success) {
+    // Record as "downloaded" so modpack stale check clears
+    state.modpackDownloads[worldId] = new Date().toISOString()
+    window.craftsync.saveModpackDownload({ worldId })
+    renderWorlds()
+    showToast('success', 'Mods synced', `${res.message}\n\nRestart Minecraft to apply changes.`, 8000)
+  } else {
+    showToast('error', 'Sync failed', res.error)
+  }
+}
+
+async function syncModsAndDismiss(worldId) {
+  await syncMods(worldId)
+  // syncMods already records download timestamp and re-renders, dismissing the strip
+}
+
+async function downloadModpackFromCard(id) {
+  const w = findWorld(id); if (!w?.modpack) return
+  showBanner('modpackBanner', `Downloading "${w.modpack.name}"...`, 'modpackText')
+  const res = await window.craftsync.downloadModpack({ worldId: id, driveId: findWorld(id)?._driveId || null })
+  hideBanner('modpackBanner')
+  if (res.success) {
+    state.modpackDownloads[id] = new Date().toISOString()
+    window.craftsync.saveModpackDownload({ worldId: id })
+    renderWorlds() // re-renders to remove the warning strip and re-enable play button
+    showToast('success', 'Modpack downloaded', `"${w.modpack.name}.mrpack" saved to Downloads! Install in Modrinth then come back to play.`, 10000)
+  } else {
+    showToast('error', 'Download failed', res.error)
+  }
+}
+
+// ── UTILS ─────────────────────────────────────────────────
+function pixels(theme) {
+  const p = {
+    grass:['#166534','#15803d','#4ade80','#14532d','#166534','#4ade80','#15803d','#14532d','#4ade80','#166534','#15803d','#14532d','#4ade80','#166534','#14532d','#15803d','#166534','#4ade80','#14532d','#15803d','#166534','#4ade80','#15803d','#14532d','#4ade80'],
+    nether:['#7f1d1d','#991b1b','#f87171','#450a0a','#7f1d1d','#f87171','#991b1b','#450a0a','#f87171','#7f1d1d','#991b1b','#450a0a','#f87171','#7f1d1d','#450a0a','#991b1b','#7f1d1d','#f87171','#450a0a','#991b1b','#7f1d1d','#f87171','#991b1b','#450a0a','#f87171'],
+    sky:['#0c1445','#1e3a8a','#60a5fa','#0c1445','#1e3a8a','#60a5fa','#1e3a8a','#0c1445','#60a5fa','#1e3a8a','#1e3a8a','#0c1445','#60a5fa','#1e3a8a','#0c1445','#1e3a8a','#0c1445','#60a5fa','#0c1445','#1e3a8a','#1e3a8a','#60a5fa','#0c1445','#1e3a8a','#60a5fa'],
+  }
+  return (p[theme]||p.grass).map(c=>`<div style="background:${c};border-radius:1px"></div>`).join('')
+}
+
+function showModMismatchModal(missing, extra) {
+  const missingSection = document.getElementById('modMismatchMissing')
+  const extraSection = document.getElementById('modMismatchExtra')
+  const missingList = document.getElementById('modMismatchMissingList')
+  const extraList = document.getElementById('modMismatchExtraList')
+
+  if (missing.length > 0) {
+    missingList.innerHTML = missing.map(m => `<div>• ${m}</div>`).join('')
+    missingSection.classList.remove('hidden')
+  } else {
+    missingSection.classList.add('hidden')
+  }
+
+  if (extra.length > 0) {
+    extraList.innerHTML = extra.map(m => `<div>• ${m}</div>`).join('')
+    extraSection.classList.remove('hidden')
+  } else {
+    extraSection.classList.add('hidden')
+  }
+
+  document.getElementById('modMismatchModal').classList.remove('hidden')
+}
+
+function closeModMismatchModal() {
+  document.getElementById('modMismatchModal').classList.add('hidden')
+}
+
+async function cancelOperation() {
+  await window.craftsync.cancelOperation()
+  // Hide all banners
+  hideBanner('uploadBanner')
+  hideBanner('downloadBanner')
+  hideBanner('modpackBanner')
+  showToast('info', 'Cancelled', 'Operation cancelled.')
+}
+
+function showBanner(id, text, tid) {
+  document.getElementById(tid).textContent = text
+  document.getElementById(id).classList.remove('hidden')
+  // Reset progress bar
+  const bannerId = id.replace('Banner', '')
+  const bar = document.getElementById(`${bannerId}ProgressBar`)
+  const pct = document.getElementById(`${bannerId}Pct`)
+  const detail = document.getElementById(`${bannerId}Detail`)
+  if (bar) bar.style.width = '0%'
+  if (pct) pct.textContent = ''
+  if (detail) detail.textContent = ''
+}
+
+function hideBanner(id) {
+  document.getElementById(id).classList.add('hidden')
+}
+
+function updateBannerProgress(bannerId, step, detail, pct) {
+  const textEl = document.getElementById(`${bannerId}Text`)
+  const pctEl = document.getElementById(`${bannerId}Pct`)
+  const barEl = document.getElementById(`${bannerId}ProgressBar`)
+  const detailEl = document.getElementById(`${bannerId}Detail`)
+  if (textEl) textEl.textContent = step
+  if (pctEl) pctEl.textContent = pct !== null ? `${pct}%` : ''
+  if (barEl && pct !== null) barEl.style.width = `${pct}%`
+  if (detailEl) detailEl.textContent = detail || ''
+}
+
+// Register progress listener once
+if (!window._progressListenerAdded) {
+  window._progressListenerAdded = true
+  window.craftsync.onProgress(({ step, detail, pct }) => {
+    // Determine which banner is currently visible
+    if (!document.getElementById('uploadBanner').classList.contains('hidden')) {
+      updateBannerProgress('upload', step, detail, pct)
+    } else if (!document.getElementById('downloadBanner').classList.contains('hidden')) {
+      updateBannerProgress('download', step, detail, pct)
+    } else if (!document.getElementById('modpackBanner').classList.contains('hidden')) {
+      updateBannerProgress('modpack', step, detail, pct)
+    }
+  })
+}
+function showError(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.remove('hidden') }
+
+function timeAgo(iso) {
+  const diff = (Date.now() - new Date(iso)) / 1000
+  if (diff < 60) return 'just now'
+  if (diff < 3600) return `${Math.floor(diff/60)}m ago`
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`
+  return `${Math.floor(diff/86400)}d ago`
+}
+</script>
+</body>
+</html>
